@@ -1,0 +1,60 @@
+<script src="dist/tvmjs_runtime.wasi.js"></script>
+<script src="dist/tvmjs.bundle.js"></script>
+
+<script>
+  var tvmjsGlobalEnv = tvmjsGlobalEnv || {};
+</script>
+
+<script type="module">
+  import init, { TokenizerWasm } from "./dist/tokenizers-wasm/tokenizers_wasm.js";
+
+  var initialized = false;
+  async function getTokenizer(name) {
+    if (!initialized) {
+      await init();
+    }
+    const jsonText = await (await fetch("https://huggingface.co/" + name + "/raw/main/tokenizer.json")).text();
+    return new TokenizerWasm(jsonText);
+  }
+
+  tvmjsGlobalEnv.getTokenizer = getTokenizer;
+</script>
+
+<script src="dist/stable_diffusion.js"></script>
+
+
+<h2> Image Generation Demo </h2>
+<div>
+  Input Prompt <input
+  name="inputPrompt"
+  id="inputPrompt"
+  type="text"
+  value="A photo of an astronaut riding a horse on mars"
+  size="77"/>
+  Negative Prompt(can be left empty) <input
+  name="negativePrompt"
+  id="negativePrompt"
+  type="text"
+  value=""
+  size="77"/>
+</div>
+
+<div>
+  Render intermediate steps (can show down execution) -
+  <select name="vae-cycle" id="vaeCycle">
+    <option value="-1">no</option>
+    <option value="2">run vae every two unet steps after step 10</option>
+  </select>
+
+  <div id="progress">
+    <label id="gpu-tracker-label"></label><br>
+    <label id="progress-tracker-label"></label><br>
+    <progress id="progress-tracker-progress" max="100" value="100"> </progress>
+  </div>
+  <button onclick="tvmjsGlobalEnv.asyncOnGenerate()">Generate</button>
+</div>
+
+<div>
+<canvas id="canvas" width="512" height="512"></canvas>
+</div>
+<div id="log"></div>

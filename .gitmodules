@@ -1,0 +1,3 @@
+[submodule "3rdparty/tokenizers-wasm"]
+	path = 3rdparty/tokenizers-wasm
+	url = https://github.com/mithril-security/tokenizers-wasm
