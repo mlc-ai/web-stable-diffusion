@@ -6,7 +6,7 @@ notitle: true
 
 # Web Stable Diffusion
 
-This project brings stable diffusion models to web browsers. **Everything runs inside the browser with no server support.** Please check out our [GitHub repo](https://github.com/mlc-ai/web-stable-diffusion) to see how we did it. There is also a [demo](#text-to-image-generation-demo) which you can try out.
+This project brings stable diffusion models to web browsers. **Everything runs inside the browser with no server support.** To our knowledge, this is the the world’s first stable diffusion completely running on the browser. Please check out our [GitHub repo](https://github.com/mlc-ai/web-stable-diffusion) to see how we did it. There is also a [demo](#text-to-image-generation-demo) which you can try out.
 
 <img src="img/fig/browser-screenshot.png" alt="Browser screenshot" width="100%"/>
 
