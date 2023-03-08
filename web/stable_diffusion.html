@@ -22,16 +22,14 @@
 
 <script src="dist/stable_diffusion.js"></script>
 
-
-<h2> Image Generation Demo </h2>
 <div>
-  Input Prompt <input
+  Input prompt: <input
   name="inputPrompt"
   id="inputPrompt"
   type="text"
   value="A photo of an astronaut riding a horse on mars"
   size="77"/> <br>
-  Negative Prompt(can be left empty) <input
+  Negative prompt (optional): <input
   name="negativePrompt"
   id="negativePrompt"
   type="text"
@@ -40,10 +38,10 @@
 </div>
 
 <div>
-  Render intermediate steps (can show down execution) -
+  Render intermediate steps (may slow down execution) -
   <select name="vae-cycle" id="vaeCycle">
-    <option value="-1">no</option>
-    <option value="2">run vae every two unet steps after step 10</option>
+    <option value="-1">No</option>
+    <option value="2">Run VAE every two UNet steps after step 10</option>
   </select>
 
   <div id="progress">
