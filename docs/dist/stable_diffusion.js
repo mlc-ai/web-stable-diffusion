@@ -413,7 +413,7 @@ class StableDiffusionInstance {
       if (stage == "vae") {
         counter += 51;
       }
-      text += ", " + Math.ceil(timeElapsed) + " secs elapsed";
+      text += ", " + Math.ceil(timeElapsed) + " secs elapsed.";
       document.getElementById("progress-tracker-label").innerHTML = text;
       document.getElementById("progress-tracker-progress").value = (counter / totalSteps) * 100;
     }

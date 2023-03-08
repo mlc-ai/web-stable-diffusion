@@ -75,19 +75,33 @@
             
                 <h1 id="web-stable-diffusion">Web Stable Diffusion</h1>
 
-<p>This is the demo of bringing stable diffusion models to web browsers. Everything runs inside the browser with no server support. Please checkout our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> to see how we did it. There is also a <a href="#text-to-image-generation-demo">demo</a> which you can try out.</p>
+<p>This project brings stable diffusion models to web browsers. <strong>Everything runs inside the browser with no server support.</strong> Please check out our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> to see how we did it. There is also a <a href="#text-to-image-generation-demo">demo</a> which you can try out.</p>
 
 <p>We have been seeing amazing progress through AI models recently. Thanks to the open-source effort, developers can now easily compose open-source models together to produce amazing tasks. Stable diffusion enables the automatic creation of photorealistic images as well as images in various styles based on text input. These models are usually big and compute-heavy, which means we have to pipe through all computation requests to (GPU) servers when developing web applications based on these models. Additionally, most of the workloads have to run on a specific type of GPUs where popular deep-learning frameworks are readily available.</p>
 
-<p>This project takes a step to change that status quo and bring more diversity to the ecosystem. There are a lot of reasons to bring some (or all) of the computation to the client side. There are many possible benefits, such as cost reduction on the service provider side, as well as an enhancement for personalization and privacy protection. The development of personal computers (even mobile devices) is going in the direction that enables such possibilities. The client side is getting pretty powerful. For example, the latest MacBook Pro can have up to 96GB of unified RAM that can be used to store the model weights and a reasonably powerful GPU to run many of the workloads.</p>
+<p>This project takes a step to change that status quo and bring more diversity to the ecosystem. There are a lot of reasons to get some (or all) of the computation to the client side. There are many possible benefits, such as cost reduction on the service provider side, as well as an enhancement for personalization and privacy protection. The development of personal computers (even mobile devices) is going in the direction that enables such possibilities. The client side is getting pretty powerful. For example, the latest MacBook Pro can have up to 96GB of unified RAM that can be used to store the model weights and a reasonably powerful GPU to run many of the workloads.</p>
 
-<p>Wouldn’t it be fun to directly bring the ML models to the client, have the user open a browser tab, and directly run the stable diffusion models on the browser? This project provides the first affirmative answer to this question.</p>
+<p>Wouldn’t it be fun to directly bring the ML models to the client, have the user open a browser tab, and instantly run the stable diffusion models on the browser? This project provides the first affirmative answer to this question.</p>
 
 <h2 id="text-to-image-generation-demo">Text to Image Generation Demo</h2>
 
-<p>Because WebGPU is not yet fully stable, nor have there ever been such large-scale AI models running on top of WebGPU, so we are testing the limit here. It may not work in your environment. So far, we have only tested it on Apple silicon. Please also checkout <a href="#additional-information">here</a> for more information.</p>
+<p>Because WebGPU is not yet fully stable, nor have there ever been such large-scale AI models running on top of WebGPU, so we are testing the limit here. It may not work in your environment. So far, we have only tested it on Apple silicon. Please check out the <a href="#use-instructions">use instructions</a> and <a href="#notes">notes</a> below.</p>
 
-<p>To try it out, insert a prompt and click generate. The first run can be slow as the app needs to download and cache the weights (the second refresh will be faster as weights are cached by the browser).</p>
+<h3 id="use-instructions">Use Instructions</h3>
+
+<p>If you have a Mac computer with Apple silicon, here are the instructions for you to run stable diffusion on your browser locally:</p>
+
+<ul>
+  <li>Install <a href="https://www.google.com/chrome/canary/">Chrome Canary</a>, a developer version of Chrome that enables the use of WebGPU.</li>
+  <li>Launch Chrome Canary. <strong>You are recommended to launch from terminal with the following command:</strong>
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/Applications/Google<span class="se">\ </span>Chrome<span class="se">\ </span>Canary.app/Contents/MacOS/Google<span class="se">\ </span>Chrome<span class="se">\ </span>Canary <span class="nt">--enable-dawn-features</span><span class="o">=</span>disable_robustness
+</code></pre></div>    </div>
+    <p>This command turns off the robustness check from Chrome Canary that slows down image generation to times. It is not necessary, but we strongly recommend you to start Chrome with this command.</p>
+  </li>
+  <li>Enter your prompt, click “Generate” – we are ready to go! The image generation will start after downloading and fetching the model parameters to local cache. The download may take a few minutes, only for the first run. The subsequent refreshes and runs will be faster.</li>
+  <li>Feel free to enter different prompts as well as negative prompts to generate the image you want.</li>
+  <li>We provide an option to render images for the intermediate steps of UNet stage. Select “Run VAE every two UNet steps after step 10” for “Render intermediate steps” and click “Generate” again, and you will see how an image gets generated along the process.</li>
+</ul>
 
 <script src="dist/tvmjs_runtime.wasi.js"></script>
 
@@ -139,20 +153,16 @@
 </div>
 <div id="log"></div>
 
-<h2 id="additional-information">Additional Information</h2>
+<h3 id="notes">Notes</h3>
 
-<p>You likely need to install the latest version of <a href="https://www.google.com/chrome/canary/">Chrome Canary</a>. To get the maximum performance, WebGPU works by translating WGSL shaders to native shaders. So in theory we can reach zero gap between the WebGPU runtime and native environment. If we directly use Chrome to check the current demo on Apple silicon however, we can find a performance degradation (about 3x). This is because Chrome’s WebGPU implementation inserts bound clips for all array index access, such that <code class="language-plaintext highlighter-rouge">a[i]</code> becomes <code class="language-plaintext highlighter-rouge">a[min(i, a.size)]</code>. Ideally downstream shader compilers should be able to optimize the bound clipping out, but here unfortunately it was not the case. This gap can be fixed once WebGPU implementation becomes more mature, checks the index access range, and drops such clipping.</p>
-
-<p>You can get around this by using a special flag to launch chrome, by exiting chrome completely, then in command line, type</p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/path/to/chrome --enable-dawn-features=disable_robustness
-</code></pre></div></div>
-<p>Then you will find that the execution speed is as fast as native gpu environment. These limitations are likely going to go away as WebGPU matures.</p>
-
-<p>Please check out our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> for running the same shader flow locally on your GPU device through the native driver. Right now, there are still gaps, but we believe it is feasible to close such gaps as WebGPU dispatches to these native drivers.</p>
+<ul>
+  <li>As WebGPU does not support FP16 at this moment, the memory consumption of running the demo is about 7GB. For Apple silicon Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image. This demo may also work for Mac with AMD GPU.</li>
+  <li>Please check out our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> for running the same shader flow locally on your GPU device through the native driver. Right now, there are still gaps (e.g., without launching Chrome from command line, Chrome’s WebGPU implementation inserts bound clips for all array index access, such that <code class="language-plaintext highlighter-rouge">a[i]</code> becomes <code class="language-plaintext highlighter-rouge">a[min(i, a.size)]</code>, which are not optimized out by the downstream shader compilers), but we believe it is feasible to close such gaps as WebGPU dispatches to these native drivers.</li>
+</ul>
 
 <h2 id="disclaimer">Disclaimer</h2>
 
-<p>This demo site is for research purpose only. Please make sure to conform to the <a href="https://huggingface.co/runwayml/stable-diffusion-v1-5#uses">uses of stable diffusion models</a>.</p>
+<p>This demo site is for research purposes only. Please conform to the <a href="https://huggingface.co/runwayml/stable-diffusion-v1-5#uses">uses of stable diffusion models</a>.</p>
 
             
         </div> <!-- /container -->
