@@ -3,8 +3,6 @@
 This project brings stable diffusion models onto web browsers. **Everything runs inside the browser with no server support.** To our knowledge, this is the the world’s first stable diffusion completely running on the browser. Please checkout our [demo webpage](https://mlc.ai/web-stable-diffusion/#text-to-image-generation-demo) to try it out.
 
 <img src="site/img/fig/browser-screenshot.png" alt="Browser screenshot"/>
-<img src="site/img/gif/direct-run.gif" width="80%"/>
-<img src="site/img/gif/intermediate-render.gif" width="80%"/>
 
 We have been seeing amazing progress through AI models recently. Thanks to the open-source effort, developers can now easily compose open-source models together to produce amazing tasks. Stable diffusion enables the automatic creation of photorealistic images as well as images in various styles based on text input. These models are usually big and compute-heavy, which means we have to pipe through all computation requests to (GPU) servers when developing web applications based on these models. Additionally, most of the workloads have to run on a specific type of GPUs where popular deep-learning frameworks are readily available.
 
@@ -18,6 +16,10 @@ We are just seeing necessary elements coming together on the client side, both i
 * Careful planning of memory usage so we can fit the models into memory.
 
 We do not want to only do it for just one model. Instead, we would like to present a repeatable, hackable, composable workflow that enables anyone to easily develop and optimize these models in a **Python-first** environment and universally **deploy** them everywhere, including the web.
+
+## Get Started
+
+We will later soon update a Jupyter notebook that guides through how to build locally and deploy the stable diffusion model with local GPU runtime.
 
 ## How?
 
