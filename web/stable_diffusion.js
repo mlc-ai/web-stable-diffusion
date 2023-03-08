@@ -347,7 +347,7 @@ class StableDiffusionInstance {
         document.getElementById(
           "gpu-tracker-label").innerHTML = "This browser env do not support WebGPU";
           this.reset();
-          throw Error("This broweser env do not support WebGPU");
+          throw Error("This browser env do not support WebGPU");
       }
     } catch(err) {
       document.getElementById("gpu-tracker-label").innerHTML = (
