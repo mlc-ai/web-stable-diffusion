@@ -93,6 +93,12 @@
   <li>We provide an option to render images for the intermediate steps of UNet stage. Select “Run VAE every two UNet steps after step 10” for “Render intermediate steps” and click “Generate” again, and you will see how an image gets generated along the process.</li>
 </ul>
 
+<h2 id="notes">Notes</h2>
+
+<ul>
+  <li>As WebGPU does not supoort FP16 at this moment, the memory consumption of running the demo is about 7GB. For Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image.</li>
+</ul>
+
 <h2 id="disclaimer">Disclaimer</h2>
 
 <p>This demo site is for research purpose only. Please make sure to conform to the <a href="https://huggingface.co/runwayml/stable-diffusion-v1-5#uses">uses of stable diffusion models</a>.</p>
@@ -126,15 +132,15 @@
 
 <h2> Image Generation Demo </h2>
 <div>
-  Input Prompt <input name="inputPrompt" id="inputPrompt" type="text" value="A photo of an astronaut riding a horse on mars" size="77" /> <br />
-  Negative Prompt(can be left empty) <input name="negativePrompt" id="negativePrompt" type="text" value="" size="77" />
+  Input prompt: <input name="inputPrompt" id="inputPrompt" type="text" value="A photo of an astronaut riding a horse on mars" size="77" /> <br />
+  Negative prompt (optional): <input name="negativePrompt" id="negativePrompt" type="text" value="" size="77" />
 </div>
 
 <div>
-  Render intermediate steps (can show down execution) -
+  Render intermediate steps (may show down execution) -
   <select name="vae-cycle" id="vaeCycle">
-    <option value="-1">no</option>
-    <option value="2">run vae every two unet steps after step 10</option>
+    <option value="-1">No</option>
+    <option value="2">Run VAE every two UNet steps after step 10</option>
   </select>
 
   <div id="progress">
