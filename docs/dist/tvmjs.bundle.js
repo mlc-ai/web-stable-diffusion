@@ -2167,21 +2167,11 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	     */
 	    fetchNDArrayCacheInternal(ndarrayCacheUrl, list, device) {
 	        return __awaiter(this, void 0, void 0, function* () {
-	            const computeTotalBytes = (rec) => {
-	                const dtype = this.toDLDataType(rec.dtype);
-	                const size = rec.shape.reduce((a, b) => {
-	                    return a * b;
-	                }, 1);
-	                if (rec.format == "f32-to-bf16" && rec.dtype == "float32") {
-	                    return size * 2;
-	                }
-	                return size * dtype.bits * dtype.lanes / 8;
-	            };
 	            const perf = compact.getPerformance();
 	            let tstart = perf.now();
 	            let totalBytes = 0;
 	            for (let i = 0; i < list.length; ++i) {
-	                totalBytes += computeTotalBytes(list[i]);
+	                totalBytes += list[i].nbytes;
 	            }
 	            let fetchedBytes = 0;
 	            let timeElapsed = 0;
@@ -2212,13 +2202,9 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	            }
 	            const cache = yield caches.open("tvmjs");
 	            for (let i = 0; i < list.length; ++i) {
-	                const rec = list[i];
 	                reportCallback(i);
-	                fetchedBytes += computeTotalBytes(rec);
-	                const cpu_arr = this.withNewScope(() => {
-	                    return this.detachFromCurrentScope(this.empty(rec.shape, rec.dtype, this.cpu()));
-	                });
-	                const dataUrl = new URL(rec.dataPath, ndarrayCacheUrl).href;
+	                fetchedBytes += list[i].nbytes;
+	                const dataUrl = new URL(list[i].dataPath, ndarrayCacheUrl).href;
 	                const request = new Request(dataUrl);
 	                let buffer;
 	                try {
@@ -2236,26 +2222,33 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	                }
 	                catch (err) {
 	                    this.env.logger("Error: Cannot fetch " + dataUrl + " err= " + err);
-	                    cpu_arr.dispose();
 	                    throw err;
 	                }
-	                // first sync copy to cpu.
-	                this.ctx.arrayDecodeStorage(cpu_arr, new Uint8Array(buffer), rec.format);
-	                // then async stream into GPU if needed
-	                if (device.deviceType == DeviceStrToEnum.cpu) {
-	                    this.ndarrayCacheUpdate(rec.name, cpu_arr, false);
-	                    cpu_arr.dispose();
-	                }
-	                else {
-	                    // allocate a gpu arr and async copy to it.
-	                    const gpu_arr = this.withNewScope(() => {
-	                        return this.detachFromCurrentScope(this.empty(rec.shape, rec.dtype, device));
+	                const shardRecords = list[i].records;
+	                for (let j = 0; j < shardRecords.length; ++j) {
+	                    const rec = shardRecords[j];
+	                    const cpu_arr = this.withNewScope(() => {
+	                        return this.detachFromCurrentScope(this.empty(rec.shape, rec.dtype, this.cpu()));
 	                    });
-	                    gpu_arr.copyFrom(cpu_arr);
-	                    yield device.sync();
-	                    this.ndarrayCacheUpdate(rec.name, gpu_arr, false);
-	                    cpu_arr.dispose();
-	                    gpu_arr.dispose();
+	                    const recSource = buffer.slice(rec.byteOffset, rec.byteOffset + rec.nbytes);
+	                    // first sync copy to cpu.
+	                    this.ctx.arrayDecodeStorage(cpu_arr, new Uint8Array(recSource), rec.format);
+	                    // then async stream into GPU if needed
+	                    if (device.deviceType == DeviceStrToEnum.cpu) {
+	                        this.ndarrayCacheUpdate(rec.name, cpu_arr, false);
+	                        cpu_arr.dispose();
+	                    }
+	                    else {
+	                        // allocate a gpu arr and async copy to it.
+	                        const gpu_arr = this.withNewScope(() => {
+	                            return this.detachFromCurrentScope(this.empty(rec.shape, rec.dtype, device));
+	                        });
+	                        gpu_arr.copyFrom(cpu_arr);
+	                        yield device.sync();
+	                        this.ndarrayCacheUpdate(rec.name, gpu_arr, false);
+	                        cpu_arr.dispose();
+	                        gpu_arr.dispose();
+	                    }
 	                }
 	                timeElapsed = Math.ceil((perf.now() - tstart) / 1000);
 	            }
