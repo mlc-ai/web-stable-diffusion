@@ -82,13 +82,14 @@
 <p>If you have a Mac computer with Apple silicon, here are the instructions for you to run stable diffusion on your browser locally:</p>
 
 <ul>
-  <li>Install <a href="https://www.google.com/chrome/canary/">Chrome Canary</a>, a developer version of Chrome that enables WebGPU.</li>
-  <li><strong>(Recommended)</strong> Launch Chrome from terminal with the following command:
+  <li>Install <a href="https://www.google.com/chrome/canary/">Chrome Canary</a>, a developer version of Chrome that enables use of WebGPU.</li>
+  <li>Launch Chrome Canary, goto <a href="chrome://flags/#enable-unsafe-webgpu">chrome://flags/#enable-unsafe-webgpu</a> and enable WebGPU. Then quit Chrome in the top-left corner via “Chrome Canary - Quit Google Chrome” or via “⌘-Q”.</li>
+  <li>Launch Chrome again. <strong>You are recommended to launch from terminal with the following command:</strong>
     <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/Applications/Google<span class="se">\ </span>Chrome<span class="se">\ </span>Canary.app/Contents/MacOS/Google<span class="se">\ </span>Chrome<span class="se">\ </span>Canary <span class="nt">--enable-dawn-features</span><span class="o">=</span>disable_robustness
 </code></pre></div>    </div>
     <p>This command turns off the robustness check from Chrome Canary that slows down image generation to times. It is not necessary, but we strongly recommend you to start Chrome with this command.</p>
   </li>
-  <li>Enter your prompt, click “Generate” – we are ready to go! The image generation will start after downloading and fetching the model parameters to local cache. The download may take a few minutes, only for the first run.</li>
+  <li>Enter your prompt, click “Generate” – we are ready to go! The image generation will start after downloading and fetching the model parameters to local cache. The download may take a few minutes, only for the first run. The second run will be much faster.</li>
   <li>Feel free to enter different prompts as well as negative prompts to generate the image you want.</li>
   <li>We provide an option to render images for the intermediate steps of UNet stage. Select “Run VAE every two UNet steps after step 10” for “Render intermediate steps” and click “Generate” again, and you will see how an image gets generated along the process.</li>
 </ul>
