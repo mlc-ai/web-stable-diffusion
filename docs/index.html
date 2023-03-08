@@ -77,6 +77,8 @@
 
 <p>This project brings stable diffusion models to web browsers. <strong>Everything runs inside the browser with no server support.</strong> Please check out our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> to see how we did it. There is also a <a href="#text-to-image-generation-demo">demo</a> which you can try out.</p>
 
+<p><img src="img/fig/workflow.svg" alt="workflow" /></p>
+
 <p>We have been seeing amazing progress through AI models recently. Thanks to the open-source effort, developers can now easily compose open-source models together to produce amazing tasks. Stable diffusion enables the automatic creation of photorealistic images as well as images in various styles based on text input. These models are usually big and compute-heavy, which means we have to pipe through all computation requests to (GPU) servers when developing web applications based on these models. Additionally, most of the workloads have to run on a specific type of GPUs where popular deep-learning frameworks are readily available.</p>
 
 <p>This project takes a step to change that status quo and bring more diversity to the ecosystem. There are a lot of reasons to get some (or all) of the computation to the client side. There are many possible benefits, such as cost reduction on the service provider side, as well as an enhancement for personalization and privacy protection. The development of personal computers (even mobile devices) is going in the direction that enables such possibilities. The client side is getting pretty powerful. For example, the latest MacBook Pro can have up to 96GB of unified RAM that can be used to store the model weights and a reasonably powerful GPU to run many of the workloads.</p>
