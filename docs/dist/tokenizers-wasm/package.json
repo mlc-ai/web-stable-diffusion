@@ -1,0 +1,15 @@
+{
+  "name": "tokenizers-wasm",
+  "collaborators": [
+    "Matthias Brunel <matthias.brunel@mithrilsecurity.io>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "tokenizers_wasm_bg.wasm",
+    "tokenizers_wasm.js",
+    "tokenizers_wasm.d.ts"
+  ],
+  "module": "tokenizers_wasm.js",
+  "types": "tokenizers_wasm.d.ts",
+  "sideEffects": false
+}

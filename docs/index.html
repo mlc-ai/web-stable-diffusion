@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WebSD | Home</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet"
+              href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css"
+              integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb"
+              crossorigin="anonymous">
+        <link rel="stylesheet"
+              href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/web-stable-diffusion//assets/css/main.css">
+        <link rel="stylesheet" href="/web-stable-diffusion//assets/css/group.css">
+        <!-- <link rel="stylesheet" href="/web-stable-diffusion//css/table.css">          -->
+        <link rel="shortcut icon" href="/web-stable-diffusion//assets/img/logo/mlc-favicon.png">
+        <meta http-equiv="origin-trial" content="Agx76XA0ITxMPF0Z8rbbcMllwuxsyp9qdtQaXlLqu1JUrdHB6FPonuyIKJ3CsBREUkeioJck4nn3KO0c0kkwqAMAAABJeyJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0Ojg4ODgiLCJmZWF0dXJlIjoiV2ViR1BVIiwiZXhwaXJ5IjoxNjkxNzExOTk5fQ==">
+
+    </head>
+    <body>
+        <div class="container">
+            <!-- This is a bit nasty, but it basically says be a column first, and on larger screens be a spaced out row -->
+            <div class="header d-flex
+                        flex-column
+                        flex-md-row justify-content-md-between">
+              <a href="/web-stable-diffusion//" id="navtitle">
+                  <img src="/web-stable-diffusion//assets/img/logo/mlc-logo-with-text-landscape.svg" height="70px"
+                       alt="MLC" id="logo">
+              </a>
+              <ul id="topbar" class="nav nav-pills justify-content-center">
+                    
+                    
+
+                        
+
+                        
+                        
+                        
+
+                      <li class="nav-item">
+                         
+                            <a class="nav-link active"
+                               href="/web-stable-diffusion//">
+                                Home
+                            </a>
+                         
+                        </li>
+
+                    
+
+                        
+
+                        
+                        
+                        
+
+                      <li class="nav-item">
+                         
+                            <a class="nav-link "
+                               href="https://github.com/mlc-ai/web-stable-diffusion">
+                                Github
+                            </a>
+                         
+                        </li>
+
+                    
+
+                </ul>
+            </div>
+
+            
+
+            
+            <!-- Schedule  -->
+            
+                <h1 id="web-stable-diffusion">Web Stable Diffusion</h1>
+
+<script src="dist/tvmjs_runtime.wasi.js"></script>
+
+<script src="dist/tvmjs.bundle.js"></script>
+
+<script>
+  var tvmjsGlobalEnv = tvmjsGlobalEnv || {};
+</script>
+
+<script type="module">
+  import init, { TokenizerWasm } from "./dist/tokenizers-wasm/tokenizers_wasm.js";
+
+  var initialized = false;
+  async function getTokenizer(name) {
+    if (!initialized) {
+      await init();
+    }
+    const jsonText = await (await fetch("https://huggingface.co/" + name + "/raw/main/tokenizer.json")).text();
+    return new TokenizerWasm(jsonText);
+  }
+
+  tvmjsGlobalEnv.getTokenizer = getTokenizer;
+</script>
+
+<script src="dist/stable_diffusion.js"></script>
+
+<h2> Image Generation Demo </h2>
+<div>
+  Input Prompt <input name="inputPrompt" id="inputPrompt" type="text" value="A photo of an astronaut riding a horse on mars" size="77" /> <br />
+  Negative Prompt(can be left empty) <input name="negativePrompt" id="negativePrompt" type="text" value="" size="77" />
+</div>
+
+<div>
+  Render intermediate steps (can show down execution) -
+  <select name="vae-cycle" id="vaeCycle">
+    <option value="-1">no</option>
+    <option value="2">run vae every two unet steps after step 10</option>
+  </select>
+
+  <div id="progress">
+    <label id="gpu-tracker-label"></label><br />
+    <label id="progress-tracker-label"></label><br />
+    <progress id="progress-tracker-progress" max="100" value="100"> </progress>
+  </div>
+  <button onclick="tvmjsGlobalEnv.asyncOnGenerate()">Generate</button>
+</div>
+
+<div>
+<canvas id="canvas" width="512" height="512"></canvas>
+</div>
+<div id="log"></div>
+
+
+            
+        </div> <!-- /container -->
+
+        <!-- Support retina images. -->
+        <script type="text/javascript"
+                src="/web-stable-diffusion//assets/js/srcset-polyfill.js"></script>
+    </body>
+
+</html>
