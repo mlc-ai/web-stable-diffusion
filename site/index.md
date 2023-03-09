@@ -18,7 +18,7 @@ Wouldn’t it be fun to directly bring the ML models to the client, have the use
 
 ## Text to Image Generation Demo
 
-Because WebGPU is not yet fully stable, nor have there ever been such large-scale AI models running on top of WebGPU, so we are testing the limit here. It may not work in your environment. So far, we have only tested it on Mac with M1/M2 GPUs in Chrome Canary (a nightly build of Chrome) because WebGPU is quite new. We have tested on Windows and it does not work at this moment due to possible driver issues. We anticipate the support broadens as webgpu matures. Please check out the [use instructions](#instructions) and [notes](#notes) below.
+Because WebGPU is not yet fully stable, nor have there ever been such large-scale AI models running on top of WebGPU, so we are testing the limit here. It may not work in your environment. So far, we have only tested it on Mac with M1/M2 GPUs in Chrome Canary (a nightly build of Chrome) because WebGPU is quite new. We have tested on Windows and it does not work at this moment due to possible driver issues. We anticipate the support broadens as WebGPU matures. Please check out the [use instructions](#instructions) and [notes](#notes) below.
 
 ### Instructions
 
@@ -40,7 +40,7 @@ This command turns off the robustness check from Chrome Canary that slows down i
 
 ### Notes
 
-* As WebGPU does not support FP16 at this moment, the memory consumption of running the demo is about 7GB. For Apple silicon Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image. This demo may also work for Mac with AMD GPU.
+* WebGPU spec does comes with FP16 support already, but the implementation does not yet support this feature at this moment. As a result, the memory consumption of running the demo is about 7GB. For Apple silicon Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image. This demo may also work for Mac with AMD GPU.
 * Please check out our [GitHub repo](https://github.com/mlc-ai/web-stable-diffusion) for running the same shader flow locally on your GPU device through the native driver. Right now, there are still gaps (e.g., without launching Chrome from command line, Chrome’s WebGPU implementation inserts bound clips for all array index access, such that `a[i]` becomes `a[min(i, a.size)]`, which are not optimized out by the downstream shader compilers), but we believe it is feasible to close such gaps as WebGPU dispatches to these native drivers.
 
 ## Disclaimer
