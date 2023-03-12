@@ -14,7 +14,8 @@ cp web/stable_diffusion.html ${TVM_HOME}/web/dist/www/rpc_plugin.html
 cp web/stable_diffusion.js ${TVM_HOME}/web/dist/www/dist/
 cp web/local-config.json ${TVM_HOME}/web/dist/www/stable-diffusion-config.json
 
-cp dist/scheduler_consts.json ${TVM_HOME}/web/dist/www/dist/
+cp dist/scheduler_pndm_consts.json ${TVM_HOME}/web/dist/www/dist/
+cp dist/scheduler_dpm_solver_multistep_consts.json ${TVM_HOME}/web/dist/www/dist/
 cp dist/stable_diffusion_webgpu.wasm ${TVM_HOME}/web/dist/www/dist/
 cp -rf dist/tokenizers-wasm ${TVM_HOME}/web/dist/www/dist/
 

@@ -195,6 +195,7 @@ class PNDMScheduler(Scheduler):
             list_model_output_denom_coeff.append(model_output_denom_coeff.item())
 
         return {
+            "num_steps": len(timesteps),
             "timesteps": timesteps,
             "sample_coeff": list_sample_coeff,
             "alpha_diff": list_alpha_diff,
@@ -313,6 +314,7 @@ class DPMSolverMultistepScheduler(Scheduler):
             list_c2.append(c2.item())
 
         return {
+            "num_steps": len(timesteps),
             "timesteps": timesteps,
             "alpha": list_alpha,
             "sigma": list_sigma,

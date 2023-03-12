@@ -1,5 +1,8 @@
 {
-    "schedulerConstUrl": "dist/scheduler_consts.json",
+    "schedulerConstUrl": [
+        "dist/scheduler_dpm_solver_multistep_consts.json",
+        "dist/scheduler_pndm_consts.json"
+    ],
     "wasmUrl": "dist/stable_diffusion_webgpu.wasm",
     "cacheUrl": "https://huggingface.co/mlc-ai/web-sd/resolve/main/web-sd-shards-v1-5/",
     "tokenizer": "openai/clip-vit-large-patch14"
