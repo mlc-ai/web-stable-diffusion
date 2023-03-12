@@ -156,6 +156,7 @@ class TVMSDPipeline:
         for i in tqdm(range(num_inference_steps)):
             t = self.scheduler.timesteps[i]
             self.debug_dump(f"unet_input_{i}", latents)
+            self.debug_dump(f"timestep_{i}", t)
             noise_pred = self.unet_latents_to_noise_pred(latents, t, text_embeddings)
             self.debug_dump(f"unet_output_{i}", noise_pred)
             latents = self.scheduler.step(self.vm, noise_pred, latents, i)
