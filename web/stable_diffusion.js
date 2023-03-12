@@ -441,9 +441,6 @@ class StableDiffusionInstance {
     }
     this.tvm = tvmInstance;
 
-    await this.#asyncInitConfig();
-    await this.#asyncInitPipeline(this.config.schedulerConstUrl, this.config.tokenizer);
-
     this.tvm.beginScope();
     this.tvm.registerAsyncServerFunc("generate", async (prompt, vaeCycle) => {
       document.getElementById("inputPrompt").value = prompt;
@@ -451,9 +448,11 @@ class StableDiffusionInstance {
       document.getElementById("negativePrompt").value = "";
       await this.pipeline.generate(prompt, negPrompt, this.#getProgressCallback(), vaeCycle);
     });
-
     this.tvm.registerAsyncServerFunc("clearCanvas", async () => {
-      this.pipeline.clearCanvas();
+      this.tvm.clearCanvas();
+    });
+    this.tvm.registerAsyncServerFunc("showImage", async (data) => {
+      this.tvm.showImage(data);
     });
     this.tvm.endScope();
   }

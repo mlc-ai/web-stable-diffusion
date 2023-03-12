@@ -5,5 +5,5 @@ scripts/build_site.sh web/local-config.json
 
 echo "symlink parameter location to site.."
 
-ln -s `pwd`/dist/params site/_site/dist/web-sd-shards-v1-5
+ln -s `pwd`/dist/params site/_site/web-sd-shards-v1-5
 cd site && jekyll serve  --skip-initial-build --host localhost --baseurl /web-stable-diffusion --port 8888

@@ -84,11 +84,11 @@ def debug_dump(mod, name, args):
     """Debug dump mode"""
     if not args.debug_dump:
         return
-    dump_path = os.path.join(
-        args.artifact_path, "debug", name)
+    dump_path = os.path.join(args.artifact_path, "debug", name)
     with open(dump_path, "w") as outfile:
         outfile.write(mod.script(show_meta=True))
     print(f"Dump mod to {dump_path}")
+
 
 def build(mod: tvm.IRModule, args: Dict) -> None:
     from tvm import meta_schedule as ms
