@@ -16,6 +16,9 @@
         <link rel="shortcut icon" href="/web-stable-diffusion/assets/img/logo/mlc-favicon.png">
         <meta http-equiv="origin-trial" content="Agx76XA0ITxMPF0Z8rbbcMllwuxsyp9qdtQaXlLqu1JUrdHB6FPonuyIKJ3CsBREUkeioJck4nn3KO0c0kkwqAMAAABJeyJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0Ojg4ODgiLCJmZWF0dXJlIjoiV2ViR1BVIiwiZXhwaXJ5IjoxNjkxNzExOTk5fQ==">
 <meta http-equiv="origin-trial" content="AnmwqQ1dtYDQTYkZ5iMtHdINCaxjE94uWQBKp2yOz1wPTcjSRtOHUGQG+r2BxsEuM0qhxTVnuTjyh31HgTeA8gsAAABZeyJvcmlnaW4iOiJodHRwczovL21sYy5haTo0NDMiLCJmZWF0dXJlIjoiV2ViR1BVIiwiZXhwaXJ5IjoxNjkxNzExOTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZX0=">
+<script src="dist/tvmjs_runtime.wasi.js"></script>
+<script src="dist/tvmjs.bundle.js"></script>
+
     </head>
     <body>
         <div class="container">
@@ -87,7 +90,7 @@
 
 <h2 id="text-to-image-generation-demo">Text to Image Generation Demo</h2>
 
-<p>Because WebGPU is not yet fully stable, nor have there ever been such large-scale AI models running on top of WebGPU, so we are testing the limit here. It may not work in your environment. So far, we have only tested it on Mac with M1/M2 GPUs in Chrome Canary (a nightly build of Chrome) because WebGPU is quite new. We have tested on Windows and it does not work at this moment due to possible driver issues. We anticipate the support broadens as webgpu matures. Please check out the <a href="#instructions">use instructions</a> and <a href="#notes">notes</a> below.</p>
+<p>Because WebGPU is not yet fully stable, nor have there ever been such large-scale AI models running on top of WebGPU, so we are testing the limit here. It may not work in your environment. So far, we have only tested it on Mac with M1/M2 GPUs in Chrome Canary (a nightly build of Chrome) because WebGPU is quite new. We have tested on Windows and it does not work at this moment due to possible driver issues. We anticipate the support broadens as WebGPU matures. Please check out the <a href="#instructions">use instructions</a> and <a href="#notes">notes</a> below.</p>
 
 <h3 id="instructions">Instructions</h3>
 
@@ -106,10 +109,6 @@
 </ul>
 
 <h3 id="demo">Demo</h3>
-
-<script src="dist/tvmjs_runtime.wasi.js"></script>
-
-<script src="dist/tvmjs.bundle.js"></script>
 
 <script>
   var tvmjsGlobalEnv = tvmjsGlobalEnv || {};
@@ -138,6 +137,14 @@
 </div>
 
 <div>
+  Select scheduler -
+  <select name="scheduler" id="schedulerId">
+    <option value="0">Multi-step DPM Solver (20 steps)</option>
+    <option value="1">PNDM (50 steps)</option>
+  </select>
+
+  <br />
+
   Render intermediate steps (may slow down execution) -
   <select name="vae-cycle" id="vaeCycle">
     <option value="-1">No</option>
@@ -160,7 +167,7 @@
 <h3 id="notes">Notes</h3>
 
 <ul>
-  <li>As WebGPU does not support FP16 at this moment, the memory consumption of running the demo is about 7GB. For Apple silicon Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image. This demo may also work for Mac with AMD GPU.</li>
+  <li>WebGPU spec does comes with FP16 support already, but the implementation does not yet support this feature at this moment. As a result, the memory consumption of running the demo is about 7GB. For Apple silicon Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image. This demo may also work for Mac with AMD GPU.</li>
   <li>Please check out our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> for running the same shader flow locally on your GPU device through the native driver. Right now, there are still gaps (e.g., without launching Chrome from command line, Chrome’s WebGPU implementation inserts bound clips for all array index access, such that <code class="language-plaintext highlighter-rouge">a[i]</code> becomes <code class="language-plaintext highlighter-rouge">a[min(i, a.size)]</code>, which are not optimized out by the downstream shader compilers), but we believe it is feasible to close such gaps as WebGPU dispatches to these native drivers.</li>
 </ul>
 
