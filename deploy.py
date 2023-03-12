@@ -1,4 +1,4 @@
-from typing import List
+from typing import Type
 
 import argparse
 import time
@@ -7,11 +7,10 @@ import torch
 from transformers import CLIPTokenizer
 
 import web_stable_diffusion.utils as utils
+import web_stable_diffusion.runtime as runtime
 
 import os
-import json
 import tvm
-import numpy as np
 from tvm import relax
 
 from tqdm import tqdm
@@ -27,6 +26,12 @@ def _parse_args():
         "--prompt", type=str, default="A photo of an astronaut riding a horse on mars."
     )
     args.add_argument("--negative-prompt", type=str, default="")
+    args.add_argument(
+        "--scheduler",
+        type=str,
+        choices=[scheduler.scheduler_name for scheduler in runtime.schedulers],
+        default=runtime.DPMSolverMultistepScheduler.scheduler_name,
+    )
     parsed = args.parse_args()
     if parsed.device_name == "auto":
         if tvm.cuda().exist:
@@ -38,64 +43,12 @@ def _parse_args():
     return parsed
 
 
-class PNDMScheduler:
-    def __init__(self, artifact_path: str, device) -> None:
-        with open(f"{artifact_path}/scheduler_consts.json", "r") as file:
-            jsoncontent = file.read()
-        scheduler_consts = json.loads(jsoncontent)
-
-        def f_convert(data, dtype):
-            return [tvm.nd.array(np.array(t, dtype=dtype), device) for t in data]
-
-        self.timesteps = f_convert(scheduler_consts["timesteps"], "int32")
-        self.sample_coeff = f_convert(scheduler_consts["sample_coeff"], "float32")
-        self.alpha_diff = f_convert(scheduler_consts["alpha_diff"], "float32")
-        self.model_output_denom_coeff = f_convert(
-            scheduler_consts["model_output_denom_coeff"], "float32"
-        )
-
-        self.ets: List[tvm.nd.NDArray] = [
-            tvm.nd.empty((1, 4, 64, 64), "float32", device)
-        ] * 4
-        self.cur_sample: tvm.nd.NDArray
-
-    def step(
-        self,
-        vm: relax.VirtualMachine,
-        model_output: tvm.nd.NDArray,
-        sample: tvm.nd.NDArray,
-        counter: int,
-    ) -> tvm.nd.NDArray:
-        if counter != 1:
-            self.ets = self.ets[-3:]
-            self.ets.append(model_output)
-
-        if counter == 0:
-            self.cur_sample = sample
-        elif counter == 1:
-            sample = self.cur_sample
-
-        prev_latents = vm[f"scheduler_step_{min(counter, 4)}"](
-            sample,
-            model_output,
-            self.sample_coeff[counter],
-            self.alpha_diff[counter],
-            self.model_output_denom_coeff[counter],
-            self.ets[0],
-            self.ets[1],
-            self.ets[2],
-            self.ets[3],
-        )
-
-        return prev_latents
-
-
 class TVMSDPipeline:
     def __init__(
         self,
         vm: relax.VirtualMachine,
         tokenizer: CLIPTokenizer,
-        scheduler: PNDMScheduler,
+        scheduler: runtime.Scheduler,
         tvm_device,
         param_dict,
         debug_dump_dir,
@@ -119,12 +72,13 @@ class TVMSDPipeline:
         self.debug_dump_dir = debug_dump_dir
 
     def debug_dump(self, name, arr):
+        import numpy as np
+
         if self.debug_dump_dir:
             np.save(f"{self.debug_dump_dir}/{name}.npy", arr.numpy())
 
     def __call__(self, prompt: str, negative_prompt: str = ""):
         # height = width = 512
-        num_inference_steps = 50
 
         list_text_embeddings = []
         for text in [negative_prompt, prompt]:
@@ -153,7 +107,7 @@ class TVMSDPipeline:
         )
         latents = tvm.nd.array(latents.numpy(), self.tvm_device)
 
-        for i in tqdm(range(num_inference_steps)):
+        for i in tqdm(range(len(self.scheduler.timesteps))):
             t = self.scheduler.timesteps[i]
             self.debug_dump(f"unet_input_{i}", latents)
             self.debug_dump(f"timestep_{i}", t)
@@ -166,6 +120,18 @@ class TVMSDPipeline:
         self.debug_dump("vae_output", image)
         image = self.image_to_rgba(image)
         return Image.fromarray(image.numpy().view("uint8").reshape(512, 512, 4))
+
+
+def get_scheduler_type(scheduler_name: str) -> Type[runtime.Scheduler]:
+    for scheduler in runtime.schedulers:
+        if scheduler_name == scheduler.scheduler_name:
+            return scheduler
+
+    scheduler_names = [scheduler.scheduler_name for scheduler in runtime.schedulers]
+    raise ValueError(
+        f'"{scheduler_name}" is an unsupported scheduler name. The list of '
+        f"supported scheduler names is {scheduler_names}"
+    )
 
 
 def deploy_to_pipeline(args) -> None:
@@ -183,7 +149,7 @@ def deploy_to_pipeline(args) -> None:
     pipe = TVMSDPipeline(
         vm=vm,
         tokenizer=CLIPTokenizer.from_pretrained("openai/clip-vit-large-patch14"),
-        scheduler=PNDMScheduler(args.artifact_path, device),
+        scheduler=get_scheduler_type(args.scheduler)(args.artifact_path, device),
         tvm_device=device,
         param_dict=const_params_dict,
         debug_dump_dir=debug_dump_dir,

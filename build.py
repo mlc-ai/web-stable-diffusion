@@ -35,6 +35,16 @@ def _parse_args():
     return parsed
 
 
+def debug_dump(mod, name, args):
+    """Debug dump mode"""
+    if not args.debug_dump:
+        return
+    dump_path = os.path.join(args.artifact_path, "debug", name)
+    with open(dump_path, "w") as outfile:
+        outfile.write(mod.script(show_meta=True))
+    print(f"Dump mod to {dump_path}")
+
+
 def trace_models(
     device_str: str,
 ) -> Tuple[tvm.IRModule, Dict[str, List[tvm.nd.NDArray]]]:
@@ -46,10 +56,15 @@ def trace_models(
     vae = trace.vae_to_image(pipe)
     concat_embeddings = trace.concat_embeddings()
     image_to_rgba = trace.image_to_rgba()
-    scheduler_steps = trace.scheduler_steps()
+    schedulers = [scheduler.scheduler_steps() for scheduler in trace.schedulers]
 
     mod = utils.merge_irmodules(
-        clip, unet, vae, concat_embeddings, image_to_rgba, scheduler_steps
+        clip,
+        unet,
+        vae,
+        concat_embeddings,
+        image_to_rgba,
+        *schedulers,
     )
     return relax.frontend.detach_params(mod)
 
@@ -59,7 +74,11 @@ def legalize_and_lift_params(
 ) -> tvm.IRModule:
     """First-stage: Legalize ops and trace"""
     model_names = ["clip", "unet", "vae"]
-    scheduler_func_names = [f"scheduler_step_{i}" for i in range(5)]
+    scheduler_func_names = [
+        name
+        for scheduler in trace.schedulers
+        for name in scheduler.scheduler_steps_func_names()
+    ]
     entry_funcs = (
         model_names + scheduler_func_names + ["image_to_rgba", "concat_embeddings"]
     )
@@ -68,26 +87,16 @@ def legalize_and_lift_params(
     mod = relax.transform.RemoveUnusedFunctions(entry_funcs)(mod)
     mod = relax.transform.LiftTransformParams()(mod)
 
-    debug_dump(mod_deploy, "mod_lift_params.py", args)
-
     mod_transform, mod_deploy = utils.split_transform_deploy_mod(
         mod, model_names, entry_funcs
     )
+
+    debug_dump(mod_transform, "mod_lift_params.py", args)
 
     trace.compute_save_scheduler_consts(args.artifact_path)
     new_params = utils.transform_params(mod_transform, model_params)
     utils.save_params(new_params, args.artifact_path)
     return mod_deploy
-
-
-def debug_dump(mod, name, args):
-    """Debug dump mode"""
-    if not args.debug_dump:
-        return
-    dump_path = os.path.join(args.artifact_path, "debug", name)
-    with open(dump_path, "w") as outfile:
-        outfile.write(mod.script(show_meta=True))
-    print(f"Dump mod to {dump_path}")
 
 
 def build(mod: tvm.IRModule, args: Dict) -> None:
