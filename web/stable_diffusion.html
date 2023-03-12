@@ -35,6 +35,14 @@
 </div>
 
 <div>
+  Select scheduler -
+  <select name="scheduler" id="schedulerId">
+    <option value="0">Multi-step DPM Solver (20 steps)</option>
+    <option value="1">PNDM (50 steps)</option>
+  </select>
+
+  <br>
+
   Render intermediate steps (may slow down execution) -
   <select name="vae-cycle" id="vaeCycle">
     <option value="-1">No</option>

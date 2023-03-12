@@ -14,7 +14,8 @@ echo "Copy files..."
 cp web/stable_diffusion.html site/_includes
 cp web/stable_diffusion.js site/dist
 
-cp dist/scheduler_consts.json site/dist
+cp dist/scheduler_pndm_consts.json site/dist
+cp dist/scheduler_dpm_solver_multistep_consts.json site/dist
 cp dist/stable_diffusion_webgpu.wasm site/dist
 
 cp dist/tvmjs_runtime.wasi.js site/dist
