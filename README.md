@@ -19,7 +19,72 @@ We do not want to only do it for just one model. Instead, we would like to prese
 
 ## Get Started
 
-We will later soon update a Jupyter notebook that guides through how to build locally and deploy the stable diffusion model with local GPU runtime.
+We have a [Jupyter notebook](https://github.com/mlc-ai/web-stable-diffusion/walkthrough.ipynb) that walks you through all the stages, including
+* importing the stable diffusion model,
+* optimize the model,
+* build the model,
+* deploy the model locally with native GPU runtime, and
+* deploy the model on web with WebGPU runtime.
+
+If you want to go through these steps in command line, please follow the commands below:
+<details><summary>Commands</summary>
+
+* Install TVM Unity. You can either
+    * use `pip3 install mlc-ai-nightly -f https://mlc.ai/wheels` to install the TVM Unity wheel, or
+    * follow [TVM’s documentation](https://tvm.apache.org/docs/install/from_source.html) to build from source. **Please use `git checkout origin/unity` to checkout to TVM Unity after git clone.**
+* To import, optimize and build the stable diffusion model:
+    ```shell
+    python3 build.py
+    ```
+    By default `build.py` takes `apple/m2-gpu` as build target. You can also specify CUDA target via
+    ```shell
+    python3 build.py --target cuda
+    ```
+* To deploy the model locally with native GPU runtime:
+    ```shell
+    python3 deploy.py --prompt "A photo of an astronaut riding a horse on mars."
+    ```
+    You can substitute the prompt with your own one, and optionally use `--negative-prompt "Your negative prompt"` to specify a negative prompt.
+* To deploy the model on web with WebGPU runtime, the last section “Deploy on web” of the [walkthrough notebook](https://github.com/mlc-ai/web-stable-diffusion/walkthrough.ipynb) has listed the full instructions which you can refer to. We also provide the same list of plain instructions here:
+    <details><summary>Instructions</summary>
+
+    First, let’s install all the prerequisite:
+    1. [emscripten](https://emscripten.org). It is an LLVM-based compiler which compiles C/C++ source code to WebAssembly.
+        - Follow the [installation instruction](https://emscripten.org/docs/getting_started/downloads.html#installation-instructions-using-the-emsdk-recommended) to install the latest emsdk.
+        - Source `emsdk_env.sh` by `source path/to/emsdk_env.sh`, so that `emcc` is reachable from PATH and the command `emcc` works.
+    2. [Rust](https://www.rust-lang.org/tools/install).
+    3. [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/). It helps build Rust-generated WebAssembly, which used for tokenizer in our case here.
+    4. Install jekyll by following the [official guides](https://jekyllrb.com/docs/installation/). It is the package we use for website.
+    5. Install jekyll-remote-theme by command
+        ```shell
+        gem install jekyll-remote-theme
+        ```
+    6. Install [Chrome Canary](https://www.google.com/chrome/canary/). It is a developer version of Chrome that enables the use of WebGPU.
+
+    We can verify the success installation by trying out `emcc`, `jekyll` and `wasm-pack` in terminal respectively.
+
+    Then, prepare all the necessary dependencies for web build:
+    ```shell
+    ./scripts/prep_deps.sh
+    ```
+
+    We can now build the model to WebGPU backend and export the executable to disk in the WebAssembly file format, by running
+    ```shell
+    python3 build.py --target webgpu
+    ```
+
+    The last thing to do is setting up the site with
+    ```shell
+    ./scripts/local_deploy_site.sh
+    ```
+
+    With the site set up, you can go to `localhost:8888/web-stable-diffusion/` in Chrome Canary to try out the demo on your local machine. Don’t forget to use
+    ```shell
+    /Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary --enable-dawn-features=disable_robustness
+    ```
+    to launch Chrome Canary to turn off the robustness check from Chrome.
+    </details>
+</details>
 
 ## How?
 
