@@ -5,15 +5,16 @@ import argparse
 import pickle
 import web_stable_diffusion.trace as trace
 import web_stable_diffusion.utils as utils
+from platform import system
 
+import GPUtil
 import tvm
 from tvm import relax
-from tvm.contrib import tvmjs
 
 
 def _parse_args():
     args = argparse.ArgumentParser()
-    args.add_argument("--target", type=str, default="apple/m2-gpu")
+    args.add_argument("--target", type=str, default="auto")
     args.add_argument("--db-path", type=str, default="log_db/")
     args.add_argument("--artifact-path", type=str, default="dist")
     args.add_argument(
@@ -26,7 +27,15 @@ def _parse_args():
 
     parsed = args.parse_args()
 
-    if parsed.target == "webgpu":
+    if parsed.target == "auto":
+        if system() == "Darwin":
+            target = tvm.target.Target("apple/m1-gpu")
+        else:
+            has_gpu = len(GPUtil.getGPUs()) > 0
+            target = tvm.target.Target("cuda" if has_gpu else "llvm")
+        print(f"Automatically configuring target: {target}")
+        parsed.target = tvm.target.Target(target, host="llvm")
+    elif parsed.target == "webgpu":
         parsed.target = tvm.target.Target(
             "webgpu", host="llvm -mtriple=wasm32-unknown-unknown-wasm"
         )

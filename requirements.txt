@@ -1,0 +1,4 @@
+accelerate
+diffusers
+gputil
+transformers
