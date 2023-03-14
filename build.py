@@ -114,7 +114,6 @@ def build(mod: tvm.IRModule, args: Dict) -> None:
 
     if target_kind == "webgpu":
         output_filename = f"stable_diffusion_{target_kind}.wasm"
-        tvmjs.export_runtime(f"{args.artifact_path}")
     else:
         output_filename = f"stable_diffusion_{target_kind}.so"
     ex.export_library(os.path.join(args.artifact_path, output_filename))
