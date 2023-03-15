@@ -119,6 +119,26 @@ class RPCBaseDebugSession:
         return wrapped_f
 
 
+def connect_to_proxy(wasm_path):
+    """Connect to defalt proxy
+
+    Parameters
+    ----------
+    wasm_path: str
+        The path to wasm
+    """
+    proxy_host = os.environ.get("TVM_RPC_PROXY_HOST", "127.0.0.1")
+    proxy_port = int(os.environ.get("TVM_RPC_PROXY_PORT", "9090"))
+    wasm_binary = open(wasm_path, "rb").read()
+    remote = rpc.connect(
+        proxy_host,
+        proxy_port,
+        key="wasm",
+        session_constructor_args=["rpc.WasmSession", wasm_binary],
+    )
+    return remote
+
+
 class WebGPUDebugSession(RPCBaseDebugSession):
     """Remote debug session to handle webgpu.
 
@@ -129,15 +149,7 @@ class WebGPUDebugSession(RPCBaseDebugSession):
     """
 
     def __init__(self, wasm_path):
-        proxy_host = os.environ.get("TVM_RPC_PROXY_HOST", "127.0.0.1")
-        proxy_port = int(os.environ.get("TVM_RPC_PROXY_PORT", "9090"))
-        wasm_binary = open(wasm_path, "rb").read()
-        remote = rpc.connect(
-            proxy_host,
-            proxy_port,
-            key="wasm",
-            session_constructor_args=["rpc.WasmSession", wasm_binary],
-        )
+        remote = connect_to_proxy(wasm_path)
         super(WebGPUDebugSession, self).__init__(
             remote, remote.system_lib(), remote.webgpu()
         )

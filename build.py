@@ -44,7 +44,7 @@ def _parse_args():
     return parsed
 
 
-def debug_dump(mod, name, args):
+def debug_dump_script(mod, name, args):
     """Debug dump mode"""
     if not args.debug_dump:
         return
@@ -52,6 +52,24 @@ def debug_dump(mod, name, args):
     with open(dump_path, "w") as outfile:
         outfile.write(mod.script(show_meta=True))
     print(f"Dump mod to {dump_path}")
+
+
+def debug_dump_shader(ex, name, args):
+    """Debug dump mode"""
+    if not args.debug_dump:
+        return
+    target_kind = args.target.kind.default_keys[0]
+    suffix_map = {
+        "webgpu": ".wgsl",
+        "cuda": ".cu",
+        "metal": ".mtl",
+    }
+    suffix = suffix_map.get(target_kind, ".txt")
+    dump_path = os.path.join(args.artifact_path, "debug", name + suffix)
+    source = ex.mod.imported_modules[0].imported_modules[0].get_source()
+    with open(dump_path, "w") as outfile:
+        outfile.write(source)
+    print(f"Dump shader to {dump_path}")
 
 
 def trace_models(
@@ -95,12 +113,11 @@ def legalize_and_lift_params(
     mod = relax.pipeline.get_pipeline()(mod)
     mod = relax.transform.RemoveUnusedFunctions(entry_funcs)(mod)
     mod = relax.transform.LiftTransformParams()(mod)
-
     mod_transform, mod_deploy = utils.split_transform_deploy_mod(
         mod, model_names, entry_funcs
     )
 
-    debug_dump(mod_transform, "mod_lift_params.py", args)
+    debug_dump_script(mod_transform, "mod_lift_params.py", args)
 
     trace.compute_save_scheduler_consts(args.artifact_path)
     new_params = utils.transform_params(mod_transform, model_params)
@@ -115,7 +132,7 @@ def build(mod: tvm.IRModule, args: Dict) -> None:
     with args.target, db, tvm.transform.PassContext(opt_level=3):
         mod_deploy = relax.transform.MetaScheduleApplyDatabase()(mod)
 
-    debug_dump(mod_deploy, "mod_build_stage.py", args)
+    debug_dump_script(mod_deploy, "mod_build_stage.py", args)
 
     ex = relax.build(mod_deploy, args.target)
 
@@ -125,6 +142,8 @@ def build(mod: tvm.IRModule, args: Dict) -> None:
         output_filename = f"stable_diffusion_{target_kind}.wasm"
     else:
         output_filename = f"stable_diffusion_{target_kind}.so"
+
+    debug_dump_shader(ex, f"stable_diffusion_{target_kind}", args)
     ex.export_library(os.path.join(args.artifact_path, output_filename))
 
 
