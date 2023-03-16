@@ -589,6 +589,7 @@
 	            const adapterInfo = yield adapter.requestAdapterInfo();
 	            const device = yield adapter.requestDevice({
 	                requiredLimits: {
+	                    maxBufferSize: 1 << 30,
 	                    maxStorageBufferBindingSize: 1 << 30,
 	                    maxComputeWorkgroupStorageSize: 32 << 10,
 	                }
@@ -800,10 +801,24 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	 */
 	class WebGPUContext {
 	    constructor(memory, device) {
-	        //private readBuffer:;
+	        // internal data
 	        this.bufferTable = [undefined];
 	        this.bufferTableFreeId = [];
 	        this.canvasRenderManager = undefined;
+	        // flags for debugging
+	        // stats of the runtime.
+	        // peak allocation
+	        this.peakAllocatedBytes = 0;
+	        // current allocation
+	        this.currAllocatedBytes = 0;
+	        // all allocation(ignoring free)
+	        this.allAllocatedBytes = 0;
+	        // shader submit counter
+	        this.shaderSubmitCounter = 0;
+	        // limite number of shaders to be submitted, useful for debugging, default to -1
+	        this.debugShaderSubmitLimit = -1;
+	        // log and sync each step
+	        this.debugLogFinish = false;
 	        this.memory = memory;
 	        this.device = device;
 	    }
@@ -822,6 +837,15 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	        var _a;
 	        (_a = this.canvasRenderManager) === null || _a === void 0 ? void 0 : _a.dispose();
 	        this.canvasRenderManager = undefined;
+	    }
+	    /**
+	     * Obtain the runtime information in readable format.
+	     */
+	    runtimeStatsText() {
+	        let info = "peak-memory=" + Math.ceil(this.peakAllocatedBytes / (1 << 20)) + " MB";
+	        info += ", all-memory=" + Math.ceil(this.allAllocatedBytes / (1 << 20)) + " MB";
+	        info += ", shader-submissions=" + this.shaderSubmitCounter;
+	        return info;
 	    }
 	    /**
 	     * Draw image from data in storage buffer.
@@ -928,6 +952,11 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	            }
 	        });
 	        const submitShader = (...args) => {
+	            if (this.debugShaderSubmitLimit != -1 &&
+	                this.shaderSubmitCounter >= this.debugShaderSubmitLimit) {
+	                this.shaderSubmitCounter += 1;
+	                return;
+	            }
 	            const commandEncoder = this.device.createCommandEncoder();
 	            const compute = commandEncoder.beginComputePass();
 	            compute.setPipeline(pipeline);
@@ -971,6 +1000,13 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	            compute.end();
 	            const command = commandEncoder.finish();
 	            this.device.queue.submit([command]);
+	            if (this.debugLogFinish) {
+	                const currCounter = this.shaderSubmitCounter;
+	                this.device.queue.onSubmittedWorkDone().then(() => {
+	                    console.log("[" + currCounter + "][Debug] finish shader" + finfo.name);
+	                });
+	            }
+	            this.shaderSubmitCounter += 1;
 	        };
 	        return submitShader;
 	    }
@@ -1015,6 +1051,11 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	            size: nbytes,
 	            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
 	        });
+	        this.currAllocatedBytes += nbytes;
+	        this.allAllocatedBytes += nbytes;
+	        if (this.currAllocatedBytes > this.peakAllocatedBytes) {
+	            this.peakAllocatedBytes = this.currAllocatedBytes;
+	        }
 	        const ptr = this.attachToBufferTable(buffer);
 	        return ptr;
 	    }
@@ -1024,6 +1065,7 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	        this.bufferTable[idx] = undefined;
 	        support.assert(buffer !== undefined);
 	        this.bufferTableFreeId.push(idx);
+	        this.currAllocatedBytes -= buffer.size;
 	        buffer.destroy();
 	    }
 	    deviceCopyToGPU(from, to, toOffset, nbytes) {
@@ -1903,6 +1945,17 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	        // ctx release goes back into lib.
 	        this.ctx.dispose();
 	        this.lib.dispose();
+	    }
+	    /**
+	     * Obtain the runtime information in readable format.
+	     */
+	    runtimeStatsText() {
+	        if (this.lib.webGPUContext !== undefined) {
+	            return this.lib.webGPUContext.runtimeStatsText();
+	        }
+	        else {
+	            return "";
+	        }
 	    }
 	    /**
 	     * Begin a new scope for tracking object disposal.
@@ -2935,6 +2988,7 @@ fn fragment_clear(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
 	            this.globalObjects.forEach(obj => {
 	                obj.dispose();
 	            });
+	            this.log(this.inst.runtimeStatsText());
 	            this.inst.dispose();
 	        }
 	        if (this.state == RPCServerState.ReceivePacketHeader) {
