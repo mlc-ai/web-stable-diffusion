@@ -19,14 +19,13 @@ We do not want to only do it for just one model. Instead, we would like to prese
 
 ## Get Started
 
-We have a [Jupyter notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/notebooks/walkthrough.ipynb) that walks you through all the stages, including
-* importing the stable diffusion model,
+We have a [Jupyter notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/walkthrough.ipynb) that walks you through all the stages, including
+* elaborate the key points of web ML model deployment and how we do to meet these points,
+* import the stable diffusion model,
 * optimize the model,
 * build the model,
 * deploy the model locally with native GPU runtime, and
 * deploy the model on web with WebGPU runtime.
-
-We also have another [Jupyter notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/notebooks/Web%20Stable%20Diffusion%20-%20TVMCon%202023.ipynb) which we presented at [TVMCon 2023 Day 1](https://www.tvmcon.org). This notebook focuses more on the import of stable diffusion models, elaborates the key points of web ML model deployment and how we do to meet these points.
 
 If you want to go through these steps in command line, please follow the commands below:
 <details><summary>Commands</summary>
@@ -47,7 +46,7 @@ If you want to go through these steps in command line, please follow the command
     python3 deploy.py --prompt "A photo of an astronaut riding a horse on mars."
     ```
     You can substitute the prompt with your own one, and optionally use `--negative-prompt "Your negative prompt"` to specify a negative prompt.
-* To deploy the model on web with WebGPU runtime, the last section “Deploy on web” of the [walkthrough notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/notebooks/walkthrough.ipynb) has listed the full instructions which you can refer to. We also provide the same list of plain instructions here:
+* To deploy the model on web with WebGPU runtime, the last section “Deploy on web” of the [walkthrough notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/walkthrough.ipynb) has listed the full instructions which you can refer to. We also provide the same list of plain instructions here:
     <details><summary>Instructions</summary>
 
     First, let’s install all the prerequisite:
