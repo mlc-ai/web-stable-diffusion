@@ -7,7 +7,6 @@ import web_stable_diffusion.trace as trace
 import web_stable_diffusion.utils as utils
 from platform import system
 
-import GPUtil
 import tvm
 from tvm import relax
 
@@ -31,7 +30,7 @@ def _parse_args():
         if system() == "Darwin":
             target = tvm.target.Target("apple/m1-gpu")
         else:
-            has_gpu = len(GPUtil.getGPUs()) > 0
+            has_gpu = tvm.cuda().exist
             target = tvm.target.Target("cuda" if has_gpu else "llvm")
         print(f"Automatically configuring target: {target}")
         parsed.target = tvm.target.Target(target, host="llvm")
