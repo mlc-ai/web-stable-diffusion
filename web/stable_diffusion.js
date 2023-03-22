@@ -254,6 +254,14 @@ class StableDiffusionPipeline {
     }
     return this.tvm.empty([1, this.maxTokenLength], "int32", this.device).copyFrom(inputIDs);
   }
+
+  /**
+   * async preload webgpu pipelines when possible.
+   */
+  async asyncLoadWebGPUPiplines() {
+    await this.tvm.asyncLoadWebGPUPiplines(this.vm.getInternalModule());
+  }
+
   /**
    * Run generation pipeline.
    *
@@ -458,11 +466,11 @@ class StableDiffusionInstance {
     }
 
     this.tvm = tvm;
-    function fetchProgressCallback(report) {
+    function initProgressCallback(report) {
       document.getElementById("progress-tracker-label").innerHTML = report.text;
-      document.getElementById("progress-tracker-progress").value = (report.fetchedBytes / report.totalBytes) * 100;
+      document.getElementById("progress-tracker-progress").value = report.progress * 100;
     }
-    tvm.registerFetchProgressCallback(fetchProgressCallback);
+    tvm.registerInitProgressCallback(initProgressCallback);
     if (!cacheUrl.startsWith("http")) {
       cacheUrl = new URL(cacheUrl, document.URL).href;
     }
@@ -488,6 +496,7 @@ class StableDiffusionInstance {
     this.pipeline = this.tvm.withNewScope(() => {
       return new StableDiffusionPipeline(this.tvm, tokenizer, schedulerConst, this.tvm.cacheMetadata);
     });
+    await this.pipeline.asyncLoadWebGPUPiplines();
   }
 
   /**
