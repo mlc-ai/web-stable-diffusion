@@ -11,6 +11,7 @@ This project takes a step to change that status quo and bring more diversity to 
 Building special client apps for those applications is one option (which we also support), but won’t it be even more amazing if we can simply open a browser and directly bring AI natively to your browser tab? There is some level of readiness in the ecosystem. WebAssembly allows us to port more lower-level runtimes onto the web. To solve the compute problem, WebGPU is getting matured lately and enables native GPU executions on the browser.
 
 We are just seeing necessary elements coming together on the client side, both in terms of hardware and browser ecosystem. Still, there are big hurdles to cross, to name a few:
+
 * We need to bring the models somewhere without the relevant GPU-accelerated Python frameworks.
 * Most of the AI frameworks have a heavy reliance on optimized computed libraries that are maintained by hardware vendors. We need to start from zero. To get the maximum benefit, we might also need to produce variants per client environment.
 * Careful planning of memory usage so we can fit the models into memory.
@@ -20,6 +21,7 @@ We do not want to only do it for just one model. Instead, we would like to prese
 ## Get Started
 
 We have a [Jupyter notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/walkthrough.ipynb) that walks you through all the stages, including
+
 * elaborate the key points of web ML model deployment and how we do to meet these points,
 * import the stable diffusion model,
 * optimize the model,
@@ -28,6 +30,7 @@ We have a [Jupyter notebook](https://github.com/mlc-ai/web-stable-diffusion/blob
 * deploy the model on web with WebGPU runtime.
 
 If you want to go through these steps in command line, please follow the commands below:
+
 <details><summary>Commands</summary>
 
 * Install TVM Unity. You can either
