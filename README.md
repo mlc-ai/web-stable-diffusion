@@ -102,7 +102,7 @@ The key technology here is machine learning compilation (MLC). Our solution is b
 - [TensorIR](https://arxiv.org/abs/2207.04296) and [MetaSchedule](https://arxiv.org/abs/2205.13603) are used to build automated solutions to generate optimized programs. These transformations are tuned on a specific device through native GPU runtimes and then used to generate optimized GPU shaders. We provide a database that records these transformations so new builds can be done without tuning.
 - We build static memory planning optimizations to reuse memory across multiple layers.
 - We use [Emscripten](https://emscripten.org/) and typescript to build a TVM web runtime that can deploy generated modules.
-- We also leverage the [wasm port](https://blog.mithrilsecurity.io/porting-tokenizers-to-wasm/) of the [rust tokenizers library](https://github.com/huggingface/tokenizers) from hugging face.
+- We also leverage the [wasm port](https://blog.mithrilsecurity.io/porting-tokenizers-to-wasm/) of the [rust tokenizers library](https://github.com/huggingface/tokenizers) from Hugging Face.
 
 ![workflow](site/img/fig/workflow.svg)
 
