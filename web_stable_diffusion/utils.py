@@ -57,10 +57,10 @@ def split_transform_deploy_mod(
         else:
             mod_deploy[gv] = func
 
-    mod_transform = relax.transform.RemoveUnusedFunctions(transform_func_names)(
+    mod_transform = relax.transform.DeadCodeElimination(transform_func_names)(
         mod_transform
     )
-    mod_deploy = relax.transform.RemoveUnusedFunctions(mod_deploy_entry_func)(
+    mod_deploy = relax.transform.DeadCodeElimination(mod_deploy_entry_func)(
         mod_deploy
     )
 
