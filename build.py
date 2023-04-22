@@ -110,7 +110,7 @@ def legalize_and_lift_params(
     )
 
     mod = relax.pipeline.get_pipeline()(mod)
-    mod = relax.transform.RemoveUnusedFunctions(entry_funcs)(mod)
+    mod = relax.transform.DeadCodeElimination(entry_funcs)(mod)
     mod = relax.transform.LiftTransformParams()(mod)
     mod_transform, mod_deploy = utils.split_transform_deploy_mod(
         mod, model_names, entry_funcs
@@ -129,7 +129,7 @@ def build(mod: tvm.IRModule, args: Dict) -> None:
 
     db = ms.database.create(work_dir=args.db_path)
     with args.target, db, tvm.transform.PassContext(opt_level=3):
-        mod_deploy = relax.transform.MetaScheduleApplyDatabase()(mod)
+        mod_deploy = relax.transform.MetaScheduleApplyDatabase(enable_warning=True)(mod)
 
     debug_dump_script(mod_deploy, "mod_build_stage.py", args)
 
