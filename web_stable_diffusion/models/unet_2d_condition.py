@@ -160,6 +160,7 @@ class TVMUNet2DConditionModel(nn.Module):
         norm_eps: float = 1e-5,
         cross_attention_dim: int = 1280,
         attention_head_dim: int = 8,
+        use_linear_projection=False,
         device: str = None,
     ):
         super().__init__()
@@ -186,6 +187,9 @@ class TVMUNet2DConditionModel(nn.Module):
         self.mid_block = None
         self.up_blocks = nn.ModuleList([])
 
+        if isinstance(attention_head_dim, int):
+            attention_head_dim = (attention_head_dim,) * len(down_block_types)
+
         # down
         output_channel = block_out_channels[0]
         for i, down_block_type in enumerate(down_block_types):
@@ -204,8 +208,9 @@ class TVMUNet2DConditionModel(nn.Module):
                 resnet_act_fn=act_fn,
                 resnet_groups=norm_num_groups,
                 cross_attention_dim=cross_attention_dim,
-                attn_num_head_channels=attention_head_dim,
+                attn_num_head_channels=attention_head_dim[i],
                 downsample_padding=downsample_padding,
+                use_linear_projection=use_linear_projection,
             )
             self.down_blocks.append(down_block)
 
@@ -218,8 +223,9 @@ class TVMUNet2DConditionModel(nn.Module):
             output_scale_factor=mid_block_scale_factor,
             resnet_time_scale_shift="default",
             cross_attention_dim=cross_attention_dim,
-            attn_num_head_channels=attention_head_dim,
+            attn_num_head_channels=attention_head_dim[-1],
             resnet_groups=norm_num_groups,
+            use_linear_projection=use_linear_projection,
         )
 
         # count how many layers upsample the images
@@ -228,6 +234,8 @@ class TVMUNet2DConditionModel(nn.Module):
         # up
         reversed_block_out_channels = list(reversed(block_out_channels))
         output_channel = reversed_block_out_channels[0]
+        reversed_attention_head_dim = list(reversed(attention_head_dim))
+
         for i, up_block_type in enumerate(up_block_types):
             is_final_block = i == len(block_out_channels) - 1
 
@@ -256,7 +264,8 @@ class TVMUNet2DConditionModel(nn.Module):
                 resnet_act_fn=act_fn,
                 resnet_groups=norm_num_groups,
                 cross_attention_dim=cross_attention_dim,
-                attn_num_head_channels=attention_head_dim,
+                attn_num_head_channels=reversed_attention_head_dim[i],
+                use_linear_projection=use_linear_projection,
             )
             self.up_blocks.append(up_block)
             prev_output_channel = output_channel

@@ -50,12 +50,23 @@ def unet_latents_to_noise_pred(pipe, device_str: str) -> tvm.IRModule:
             )
             return noise_pred
 
-    unet = utils.get_unet(pipe, device_str)
+    hidden_size = pipe.unet.config.cross_attention_dim
+    attention_head_dim = pipe.unet.config.attention_head_dim
+    use_linear_projection = pipe.unet.config.get("use_linear_projection")
+
+    unet = utils.get_unet(
+        pipe,
+        device_str,
+        cross_attention_dim=hidden_size,
+        attention_head_dim=attention_head_dim,
+        use_linear_projection=use_linear_projection,
+    )
+
     unet_to_noise_pred = UNetModelWrapper(unet)
     graph = fx.symbolic_trace(unet_to_noise_pred)
     mod = from_fx(
         graph,
-        [((1, 4, 64, 64), "float32"), ((), "int32"), ((2, 77, 768), "float32")],
+        [((1, 4, 64, 64), "float32"), ((), "int32"), ((2, 77, hidden_size), "float32")],
         keep_params_as_input=True,
     )
     return tvm.IRModule({"unet": mod["main"]})
