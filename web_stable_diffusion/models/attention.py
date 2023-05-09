@@ -212,14 +212,16 @@ class SpatialTransformer(nn.Module):
         self.n_heads = n_heads
         self.d_head = d_head
         self.in_channels = in_channels
-        self.use_linear_projection = use_linear_projection
+        # We always use 1x1 conv2d instead of linear regardless of the value of
+        # use_linear_projection that the model uses.
+        self.use_linear_projection = False # use_linear_projection
 
         inner_dim = n_heads * d_head
         self.norm = torch.nn.GroupNorm(
             num_groups=num_groups, num_channels=in_channels, eps=1e-6, affine=True
         )
 
-        if use_linear_projection:
+        if self.use_linear_projection:
             self.proj_in = nn.Linear(in_channels, inner_dim)
         else:
             self.proj_in = nn.Conv2d(
@@ -236,7 +238,7 @@ class SpatialTransformer(nn.Module):
             ]
         )
 
-        if use_linear_projection:
+        if self.use_linear_projection:
             self.proj_out = nn.Linear(in_channels, inner_dim)
         else:
             self.proj_out = nn.Conv2d(
