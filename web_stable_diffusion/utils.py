@@ -38,7 +38,7 @@ def get_unet(
             model_dict[name.replace("proj", "proj1")] = w1
             model_dict[name.replace("proj", "proj2")] = w2
             continue
-        if name.endswith("proj_in.weight") or name.endswith("proj_out.weight") and len(tensor.shape) == 2:
+        if (name.endswith("proj_in.weight") or name.endswith("proj_out.weight")) and len(tensor.shape) == 2:
             # Convert Linear weights to 1x1 conv2d weights. This is necessary for SD v2 which uses
             # use_linear_projection = True.
             model_dict[name] = torch.unsqueeze(torch.unsqueeze(tensor, -1), -1)
