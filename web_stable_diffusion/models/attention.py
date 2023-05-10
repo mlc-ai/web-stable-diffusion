@@ -206,19 +206,28 @@ class SpatialTransformer(nn.Module):
         dropout: float = 0.0,
         num_groups: int = 32,
         context_dim: Optional[int] = None,
+        use_linear_projection=False,
     ):
         super().__init__()
         self.n_heads = n_heads
         self.d_head = d_head
         self.in_channels = in_channels
+        # We always use 1x1 conv2d instead of linear regardless of the value of
+        # use_linear_projection that the model uses.
+        self.use_linear_projection = False # use_linear_projection
+
         inner_dim = n_heads * d_head
         self.norm = torch.nn.GroupNorm(
             num_groups=num_groups, num_channels=in_channels, eps=1e-6, affine=True
         )
 
-        self.proj_in = nn.Conv2d(
-            in_channels, inner_dim, kernel_size=1, stride=1, padding=0
-        )
+        if self.use_linear_projection:
+            self.proj_in = nn.Linear(in_channels, inner_dim)
+        else:
+            self.proj_in = nn.Conv2d(
+                in_channels, inner_dim, kernel_size=1, stride=1, padding=0
+            )
+
 
         self.transformer_blocks = nn.ModuleList(
             [
@@ -229,26 +238,38 @@ class SpatialTransformer(nn.Module):
             ]
         )
 
-        self.proj_out = nn.Conv2d(
-            inner_dim, in_channels, kernel_size=1, stride=1, padding=0
-        )
+        if self.use_linear_projection:
+            self.proj_out = nn.Linear(in_channels, inner_dim)
+        else:
+            self.proj_out = nn.Conv2d(
+                inner_dim, in_channels, kernel_size=1, stride=1, padding=0
+            )
 
     def forward(self, hidden_states, context=None):
         # note: if no context is given, cross-attention defaults to self-attention
-        batch, channel, height, weight = hidden_states.shape
+        batch, channel, height, width = hidden_states.shape
         residual = hidden_states
         hidden_states = self.norm(hidden_states)
-        hidden_states = self.proj_in(hidden_states)
-        inner_dim = hidden_states.shape[1]
-        hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(
-            batch, height * weight, inner_dim
-        )
+
+        if not self.use_linear_projection:
+            hidden_states = self.proj_in(hidden_states)
+            inner_dim = hidden_states.shape[1]
+            hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(batch, height * width, inner_dim)
+        else:
+            inner_dim = hidden_states.shape[1]
+            hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(batch, height * width, inner_dim)
+            hidden_states = self.proj_in(hidden_states)
+
         for block in self.transformer_blocks:
             hidden_states = block(hidden_states, context=context)
-        hidden_states = hidden_states.reshape(batch, height, weight, inner_dim).permute(
-            0, 3, 1, 2
-        )
-        hidden_states = self.proj_out(hidden_states)
+
+        if not self.use_linear_projection:
+            hidden_states = hidden_states.reshape(batch, height, width, inner_dim).permute(0, 3, 1, 2)
+            hidden_states = self.proj_out(hidden_states)
+        else:
+            hidden_states = self.proj_out(hidden_states)
+            hidden_states = hidden_states.reshape(batch, height, width, inner_dim).permute(0, 3, 1, 2)
+
         return hidden_states + residual
 
 
