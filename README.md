@@ -1,6 +1,6 @@
 # Web Stable Diffusion
 
-This project brings stable diffusion models onto web browsers. **Everything runs inside the browser with no server support.** To our knowledge, this is the the world’s first stable diffusion completely running on the browser. Please checkout our [demo webpage](https://mlc.ai/web-stable-diffusion/#text-to-image-generation-demo) to try it out.
+This project brings stable diffusion models onto web browsers. **Everything runs inside the browser with no server support.** To our knowledge, this is the the world’s first stable diffusion completely running on the browser. Please checkout our [demo webpage](https://websd.mlc.ai/#text-to-image-generation-demo) to try it out.
 
 You are also more than welcomed to checkout [Web LLM](https://github.com/mlc-ai/web-llm) if you are interested in deploying LLM-based chat bots to browser.
 
@@ -84,7 +84,7 @@ If you want to go through these steps in command line, please follow the command
     ./scripts/local_deploy_site.sh
     ```
 
-    With the site set up, you can go to `localhost:8888/web-stable-diffusion/` in Chrome Canary to try out the demo on your local machine. Don’t forget to use
+    With the site set up, you can go to `localhost:8888/` in Chrome Canary to try out the demo on your local machine. Don’t forget to use
     ```shell
     /Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary --enable-dawn-features=disable_robustness
     ```
