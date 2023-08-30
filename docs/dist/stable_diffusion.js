@@ -334,7 +334,6 @@ class StableDiffusionPipeline {
       this.tvm.withNewScope(() => {
         const image = this.vaeToImage(latents, this.vaeParams);
         this.tvm.showImage(this.imageToRGBA(image));
-        writeImage({prompt, negPrompt})
       });
       await this.device.sync();
     }
@@ -387,7 +386,9 @@ class StableDiffusionPipeline {
     this.tvm.withNewScope(() => {
       const image = this.vaeToImage(latents, this.vaeParams);
       this.tvm.showImage(this.imageToRGBA(image));
-      writeImage({prompt, negPrompt})
+      writeImage({prompt, negPrompt}).then(() => {
+        redrawHistory()
+      })
     });
     latents.dispose();
     await this.device.sync();
