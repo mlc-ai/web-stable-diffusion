@@ -254,12 +254,11 @@
     // Add all images across the top
     let largeCid = rows[0]?.value._files.image.cid
     const imagesDiv = document.createElement('div');
-    imagesDiv.className = 'd-flex justify-content-start mb-2 w-100';
-    imagesDiv.style.overflowX = 'scroll';
+    imagesDiv.className = 'justify-content-start mb-2 w-100';
     rows.forEach(row => {
       const img = imgForFile(row.value._files.image, { cache: true });
       if (img) {
-        img.className = 'mr-2';
+        img.className = 'mr-2 mb-2';
         img.addEventListener('mouseover', () => {
           largeCid = row.value._files.image.cid
           initialLargeImage.src = img.src;
