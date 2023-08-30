@@ -129,6 +129,86 @@
   tvmjsGlobalEnv.getTokenizer = getTokenizer;
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/@fireproof/core@0.11.21/dist/browser/fireproof.iife.js"></script>
+<script>
+  let doing
+  const redrawHistory = async () => {
+    if (doing) {
+      return doing
+    }
+    doing = doRedraw().finally(() => doing = null)
+    return doing
+  }
+
+  const doRedraw = async () => {
+    try {
+      const recent = await db.changes()
+      const groups = recent.rows.reverse().reduce((acc, row) => {
+        const prompt = row.value.meta?.prompt
+        if (prompt) {
+          if (!acc.has(prompt)) {
+            acc.set(prompt, [])
+          }
+          acc.get(prompt).push(row)
+        }
+        return acc
+      }, new Map())
+      console.log('rows', groups)
+
+
+      for (const [prompt, rows] of groups) {
+        const div = document.getElementById('history-' + prompt)
+        if (!div) {
+          const div = document.getElementById('history')
+          const list = div.appendChild(document.createElement('ul'))
+          list.id = 'history-' + prompt
+          const li = list.appendChild(document.createElement('li'))
+          li.appendChild(document.createTextNode(prompt))
+          const negPrompt = rows[0]?.value.meta?.negPrompt
+          if (negPrompt) {
+            li.appendChild(document.createTextNode(negPrompt))
+          }
+          const ul = li.appendChild(document.createElement('ul'))
+          for (const row of rows) {
+            const li = ul.appendChild(document.createElement('li'))
+
+            const meta = row.value._files.image
+            if (meta.file && /image/.test(meta.type)) {
+              const src = URL.createObjectURL(await meta.file());
+              const img = document.createElement("img");
+              img.src = src
+              img.height = 100;
+              img.onload = () => {
+                URL.revokeObjectURL(img.src);
+              };
+              li.appendChild(img);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function writeImage(meta) {
+    const cnv = document.getElementById('canvas')
+    const data = cnv.toDataURL()
+    const blob = await (await fetch(data)).blob()
+    var file = new File([blob], "stable-diffusion", { type: blob.type });
+    await db.put({ meta, _files: { image: file }, created: Date.now() })
+  }
+
+  async function setupDatabase() {
+    const db = Fireproof.fireproof('web-stable-diffusion');
+    window.db = db
+    db.subscribe(async (updates) => {
+      await redrawHistory()
+    })
+  }
+  window.addEventListener('load', setupDatabase)
+</script>
+
 <script src="dist/stable_diffusion.js"></script>
 
 <div>
@@ -162,6 +242,7 @@
 <div>
 <canvas id="canvas" width="512" height="512"></canvas>
 </div>
+<div id="history"></div>
 <div id="log"></div>
 
 <h3 id="notes">Notes</h3>
