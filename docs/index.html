@@ -128,6 +128,63 @@
 
   tvmjsGlobalEnv.getTokenizer = getTokenizer;
 </script>
+
+<script src="dist/stable_diffusion.js"></script>
+
+<div>
+  Input prompt: <input name="inputPrompt" id="inputPrompt" type="text" value="A photo of an astronaut riding a horse on mars" size="77" /> <br />
+  Negative prompt (optional): <input name="negativePrompt" id="negativePrompt" type="text" value="" size="77" />
+</div>
+
+<div>
+  Select scheduler -
+  <select name="scheduler" id="schedulerId">
+    <option value="0">Multi-step DPM Solver (20 steps)</option>
+    <option value="1">PNDM (50 steps)</option>
+  </select>
+
+  <br />
+
+  Render intermediate steps (may slow down execution) -
+  <select name="vae-cycle" id="vaeCycle">
+    <option value="-1">No</option>
+    <option value="2">Run VAE every two UNet steps after step 10</option>
+  </select>
+
+  <div id="progress">
+    <label id="gpu-tracker-label"></label><br />
+    <label id="progress-tracker-label"></label><br />
+    <progress id="progress-tracker-progress" max="100" value="100"> </progress>
+  </div>
+  <button onclick="tvmjsGlobalEnv.asyncOnGenerate()">Generate</button>
+</div>
+
+<div>
+<canvas id="canvas" width="512" height="512"></canvas>
+</div>
+<div id="history"></div>
+<div id="log"></div>
+
+<h3 id="notes">Notes</h3>
+
+<ul>
+  <li>WebGPU spec does comes with FP16 support already, but the implementation does not yet support this feature at this moment. As a result, the memory consumption of running the demo is about 7GB. For Apple silicon Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image. This demo may also work for Mac with AMD GPU.</li>
+  <li>Please check out our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> for running the same shader flow locally on your GPU device through the native driver. Right now, there are still gaps (e.g., without launching Chrome from command line, Chrome’s WebGPU implementation inserts bound clips for all array index access, such that <code class="language-plaintext highlighter-rouge">a[i]</code> becomes <code class="language-plaintext highlighter-rouge">a[min(i, a.size)]</code>, which are not optimized out by the downstream shader compilers), but we believe it is feasible to close such gaps as WebGPU dispatches to these native drivers.</li>
+</ul>
+
+<h2 id="disclaimer">Disclaimer</h2>
+
+<p>This demo site is for research purposes only. Please conform to the <a href="https://huggingface.co/runwayml/stable-diffusion-v1-5#uses">uses of stable diffusion models</a>.</p>
+
+            
+        </div> <!-- /container -->
+
+
+        
+        <!-- Support retina images. -->
+        <script type="text/javascript"
+                src="/assets/js/srcset-polyfill.js"></script>
+    
 <script src="dist/fireproof.iife.js"></script>
 <script>
   let doing
@@ -290,7 +347,7 @@
       // const finalImageFile = await imgData.file();
       // const blobUrl = URL.createObjectURL(finalImageFile);
       const a = document.createElement('a');
-      a.href = initialLargeImage.src 
+      a.href = initialLargeImage.src
       //blobUrl;
       // a.download = `websd.${imgData.cid}.png`
       a.download = `websd.${largeCid}.png`
@@ -300,13 +357,13 @@
       // URL.revokeObjectURL(blobUrl);
     });
 
-  li.appendChild(downloadButton);
+    li.appendChild(downloadButton);
 
     return li;
   }
 
   const doDrawUpdates = async (updates) => {
-    const groups = groupRows(updates.reverse().map(u => ({value: u})))
+    const groups = groupRows(updates.reverse().map(u => ({ value: u })))
     if (!groups.size) {
       return;
     }
@@ -387,60 +444,7 @@
   }
   window.addEventListener('load', setupDatabase)
 </script>
-
-<script src="dist/stable_diffusion.js"></script>
-
-<div>
-  Input prompt: <input name="inputPrompt" id="inputPrompt" type="text" value="A photo of an astronaut riding a horse on mars" size="77" /> <br />
-  Negative prompt (optional): <input name="negativePrompt" id="negativePrompt" type="text" value="" size="77" />
-</div>
-
-<div>
-  Select scheduler -
-  <select name="scheduler" id="schedulerId">
-    <option value="0">Multi-step DPM Solver (20 steps)</option>
-    <option value="1">PNDM (50 steps)</option>
-  </select>
-
-  <br />
-
-  Render intermediate steps (may slow down execution) -
-  <select name="vae-cycle" id="vaeCycle">
-    <option value="-1">No</option>
-    <option value="2">Run VAE every two UNet steps after step 10</option>
-  </select>
-
-  <div id="progress">
-    <label id="gpu-tracker-label"></label><br />
-    <label id="progress-tracker-label"></label><br />
-    <progress id="progress-tracker-progress" max="100" value="100"> </progress>
-  </div>
-  <button onclick="tvmjsGlobalEnv.asyncOnGenerate()">Generate</button>
-</div>
-
-<div>
-<canvas id="canvas" width="512" height="512"></canvas>
-</div>
-<div id="history"></div>
-<div id="log"></div>
-
-<h3 id="notes">Notes</h3>
-
-<ul>
-  <li>WebGPU spec does comes with FP16 support already, but the implementation does not yet support this feature at this moment. As a result, the memory consumption of running the demo is about 7GB. For Apple silicon Mac with only 8GB of unified memory, it may take longer (a few minutes) to generate an image. This demo may also work for Mac with AMD GPU.</li>
-  <li>Please check out our <a href="https://github.com/mlc-ai/web-stable-diffusion">GitHub repo</a> for running the same shader flow locally on your GPU device through the native driver. Right now, there are still gaps (e.g., without launching Chrome from command line, Chrome’s WebGPU implementation inserts bound clips for all array index access, such that <code class="language-plaintext highlighter-rouge">a[i]</code> becomes <code class="language-plaintext highlighter-rouge">a[min(i, a.size)]</code>, which are not optimized out by the downstream shader compilers), but we believe it is feasible to close such gaps as WebGPU dispatches to these native drivers.</li>
-</ul>
-
-<h2 id="disclaimer">Disclaimer</h2>
-
-<p>This demo site is for research purposes only. Please conform to the <a href="https://huggingface.co/runwayml/stable-diffusion-v1-5#uses">uses of stable diffusion models</a>.</p>
-
-            
-        </div> <!-- /container -->
-
-        <!-- Support retina images. -->
-        <script type="text/javascript"
-                src="/assets/js/srcset-polyfill.js"></script>
-    </body>
+    
+              </body>
 
 </html>
