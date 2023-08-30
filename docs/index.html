@@ -321,7 +321,6 @@
         imagesDiv.appendChild(img);
       }
     });
-
     li.appendChild(imagesDiv);
     li.appendChild(createTextDiv(rows));
 
@@ -340,21 +339,13 @@
     downloadButton.className = 'btn btn-primary m-2';
     downloadButton.innerHTML = 'Download Displayed Image';
     downloadButton.addEventListener('click', async () => {
-      // const imgData = rows[0]?.value._files.image
-      // console.log('imgData', imgData  )
-      // const finalImageFile = await imgData.file();
-      // const blobUrl = URL.createObjectURL(finalImageFile);
       const a = document.createElement('a');
       a.href = initialLargeImage.src
-      //blobUrl;
-      // a.download = `websd.${imgData.cid}.png`
       a.download = `websd.${largeCid}.png`
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      // URL.revokeObjectURL(blobUrl);
     });
-
     li.appendChild(downloadButton);
 
     return li;
