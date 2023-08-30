@@ -136,72 +136,149 @@
     if (doing) {
       return doing
     }
-    doing = doRedraw().finally(() => doing = null)
+    doing = doRedraw().catch(e => {
+      console.error(e)
+    }).finally(() => doing = null)
     return doing
   }
 
-  async function imgForFile(meta) {
+  function imgForFile(meta) {
     if (meta.file && /image/.test(meta.type)) {
-      const src = URL.createObjectURL(await meta.file());
       const img = document.createElement("img");
-      img.src = src;
+      meta.file().then((file) => {
+        const src = URL.createObjectURL(file);
+        img.src = src;
+        img.onload = () => {
+          URL.revokeObjectURL(img.src);
+        };
+      })
       img.height = 100;
-      img.onload = () => {
-        URL.revokeObjectURL(img.src);
-      };
+      img.width = 100;
       return img
     }
   }
 
-  const doRedraw = async () => {
-    try {
-      const recent = await db.changes();
-      const groups = recent.rows.reverse().reduce((acc, row) => {
-        const prompt = row.value.meta?.prompt;
-        if (prompt) {
-          if (!acc.has(prompt)) {
-            acc.set(prompt, []);
-          }
-          acc.get(prompt).push(row);
+  function groupRows(rows) {
+    return rows.reduce((acc, row) => {
+      const prompt = row.value.meta?.prompt || '';
+      const negPrompt = row.value.meta?.negPrompt || '';
+      const gprompt = prompt + negPrompt;
+      if (gprompt) {
+        if (!acc.has(gprompt)) {
+          acc.set(gprompt, []);
         }
-        return acc;
-      }, new Map());
-
-      console.log('rows', groups);
-
-      for (const [prompt, rows] of groups) {
-        const div = document.getElementById('history-' + prompt) || document.getElementById('history');
-        const list = div.appendChild(document.createElement('ul'));
-        list.id = 'history-' + prompt;
-
-        const li = list.appendChild(document.createElement('li'));
-
-        // Add the first image (final image)
-        const firstRow = rows[0];
-        const img = await imgForFile(firstRow.value._files.image);
-        if (img) {
-          li.appendChild(img);
-        }
-
-        // Add the prompt
-        li.appendChild(document.createTextNode(prompt));
-
-        // Add the negative prompt if available
-        const negPrompt = rows[0]?.value.meta?.negPrompt;
-        if (negPrompt) {
-          li.appendChild(document.createTextNode(` (Negative: ${negPrompt})`));
-        }
-
-        // Add a button to show more info
-        const button = document.createElement('button');
-        button.innerText = 'Show More Info';
-        button.onclick = () => console.log(prompt);
-        li.appendChild(button);
+        acc.get(gprompt).push(row);
       }
-    } catch (e) {
-      console.error(e);
+      return acc;
+    }, new Map());
+  }
+// Helper function to create the li element
+function createListItem() {
+  const li = document.createElement('li');
+  li.className = 'p-3 clearfix';
+  return li;
+}
+
+// Helper function to create the text division
+function createTextDiv(rows) {
+  const textDiv = document.createElement('div');
+  textDiv.className = 'text-wrap';
+
+  const prompt = rows[0]?.value.meta?.prompt;
+  const promptSpan = document.createElement('span');
+  promptSpan.className = 'd-block font-weight-bold';
+  promptSpan.appendChild(document.createTextNode(prompt));
+  textDiv.appendChild(promptSpan);
+
+  const negPrompt = rows[0]?.value.meta?.negPrompt;
+  if (negPrompt) {
+    const negPromptSpan = document.createElement('span');
+    negPromptSpan.className = 'd-block';
+    negPromptSpan.appendChild(document.createTextNode(`-(${negPrompt})`));
+    textDiv.appendChild(negPromptSpan);
+  }
+
+  return textDiv;
+}
+
+function renderListItem(rows) {
+  const li = createListItem();
+
+  // Add the first image (final version)
+  const img = imgForFile(rows[0]?.value._files.image);
+  if (img) {
+    img.className = 'mr-2 float-left';
+    li.appendChild(img);
+  }
+
+  li.appendChild(createTextDiv(rows));
+  return li;
+}
+
+function renderDetailItem(rows) {
+  const li = createListItem();
+
+  // Create a div to hold all images
+  const imagesDiv = document.createElement('div');
+  imagesDiv.className = 'd-flex justify-content-start mb-2';
+
+  // Add all images across the top
+  rows.forEach(row => {
+    const img = imgForFile(row.value._files.image);
+    if (img) {
+      img.className = 'mr-2';
+      imagesDiv.appendChild(img);
+    }
+  });
+
+  li.appendChild(imagesDiv);
+  li.appendChild(createTextDiv(rows));
+  return li;
+}
+
+
+
+  const doRedraw = async () => {
+    const recent = await db.changes();
+    const groups = groupRows(recent.rows.reverse());
+    if (!groups.size) {
+      return;
+    }
+    const div = document.getElementById('history');
+    div.innerHTML = '<h3>Local History</h3>';
+    const list = div.appendChild(document.createElement('ul'));
+    list.className = 'list-unstyled';
+
+    for (const [gprompt, rows] of groups) {
+      const listLi = renderListItem(rows);
+      listLi.id = 'gen-' + gprompt;
+
+      let isDetailView = false;
+      let detailLi = null;
+
+      const toggleView = () => {
+        if (isDetailView) {
+          // Replace detail view with list view
+          list.replaceChild(listLi, detailLi);
+        } else {
+          // Render detail view only if it doesn't already exist
+          if (!detailLi) {
+            detailLi = renderDetailItem(rows);
+            detailLi.id = listLi.id;
+            detailLi.onclick = toggleView;
+          }
+          // Replace list view with detail view
+          list.replaceChild(detailLi, listLi);
+        }
+        isDetailView = !isDetailView;
+      };
+
+
+      listLi.onclick = toggleView;
+      list.appendChild(listLi);
     }
   };
+
 
 
   async function writeImage(meta) {
