@@ -140,56 +140,69 @@
     return doing
   }
 
-  const doRedraw = async () => {
-    try {
-      const recent = await db.changes()
-      const groups = recent.rows.reverse().reduce((acc, row) => {
-        const prompt = row.value.meta?.prompt
-        if (prompt) {
-          if (!acc.has(prompt)) {
-            acc.set(prompt, [])
-          }
-          acc.get(prompt).push(row)
-        }
-        return acc
-      }, new Map())
-      console.log('rows', groups)
-
-
-      for (const [prompt, rows] of groups) {
-        const div = document.getElementById('history-' + prompt)
-        if (!div) {
-          const div = document.getElementById('history')
-          const list = div.appendChild(document.createElement('ul'))
-          list.id = 'history-' + prompt
-          const li = list.appendChild(document.createElement('li'))
-          li.appendChild(document.createTextNode(prompt))
-          const negPrompt = rows[0]?.value.meta?.negPrompt
-          if (negPrompt) {
-            li.appendChild(document.createTextNode(negPrompt))
-          }
-          const ul = li.appendChild(document.createElement('ul'))
-          for (const row of rows) {
-            const li = ul.appendChild(document.createElement('li'))
-
-            const meta = row.value._files.image
-            if (meta.file && /image/.test(meta.type)) {
-              const src = URL.createObjectURL(await meta.file());
-              const img = document.createElement("img");
-              img.src = src
-              img.height = 100;
-              img.onload = () => {
-                URL.revokeObjectURL(img.src);
-              };
-              li.appendChild(img);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error(e)
+  async function imgForFile(meta) {
+    if (meta.file && /image/.test(meta.type)) {
+      const src = URL.createObjectURL(await meta.file());
+      const img = document.createElement("img");
+      img.src = src;
+      img.height = 100;
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+      };
+      return img
     }
   }
+
+  const doRedraw = async () => {
+    try {
+      const recent = await db.changes();
+      const groups = recent.rows.reverse().reduce((acc, row) => {
+        const prompt = row.value.meta?.prompt;
+        if (prompt) {
+          if (!acc.has(prompt)) {
+            acc.set(prompt, []);
+          }
+          acc.get(prompt).push(row);
+        }
+        return acc;
+      }, new Map());
+
+      console.log('rows', groups);
+
+      for (const [prompt, rows] of groups) {
+        const div = document.getElementById('history-' + prompt) || document.getElementById('history');
+        const list = div.appendChild(document.createElement('ul'));
+        list.id = 'history-' + prompt;
+
+        const li = list.appendChild(document.createElement('li'));
+
+        // Add the first image (final image)
+        const firstRow = rows[0];
+        const img = await imgForFile(firstRow.value._files.image);
+        if (img) {
+          li.appendChild(img);
+        }
+
+        // Add the prompt
+        li.appendChild(document.createTextNode(prompt));
+
+        // Add the negative prompt if available
+        const negPrompt = rows[0]?.value.meta?.negPrompt;
+        if (negPrompt) {
+          li.appendChild(document.createTextNode(` (Negative: ${negPrompt})`));
+        }
+
+        // Add a button to show more info
+        const button = document.createElement('button');
+        button.innerText = 'Show More Info';
+        button.onclick = () => console.log(prompt);
+        li.appendChild(button);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
 
   async function writeImage(meta) {
     const cnv = document.getElementById('canvas')
