@@ -142,15 +142,29 @@
     return doing
   }
 
-  function imgForFile(meta) {
+  let updating
+  const redrawUpdates = async (updates) => {
+    if (updating) {
+      return updating
+    }
+    updating = doDrawUpdates(updates).catch(e => {
+      console.error(e)
+    }).finally(() => updating = null)
+    return updating
+  }
+
+
+  function imgForFile(meta, opts = {}) {
     if (meta.file && /image/.test(meta.type)) {
       const img = document.createElement("img");
       meta.file().then((file) => {
         const src = URL.createObjectURL(file);
         img.src = src;
-        img.onload = () => {
-          URL.revokeObjectURL(img.src);
-        };
+        if (!opts.cache) {
+          img.onload = () => {
+            URL.revokeObjectURL(img.src);
+          };
+        }
       })
       img.height = 100;
       img.width = 100;
@@ -172,70 +186,108 @@
       return acc;
     }, new Map());
   }
-// Helper function to create the li element
-function createListItem() {
-  const li = document.createElement('li');
-  li.className = 'p-3 clearfix';
-  return li;
-}
-
-// Helper function to create the text division
-function createTextDiv(rows) {
-  const textDiv = document.createElement('div');
-  textDiv.className = 'text-wrap';
-
-  const prompt = rows[0]?.value.meta?.prompt;
-  const promptSpan = document.createElement('span');
-  promptSpan.className = 'd-block font-weight-bold';
-  promptSpan.appendChild(document.createTextNode(prompt));
-  textDiv.appendChild(promptSpan);
-
-  const negPrompt = rows[0]?.value.meta?.negPrompt;
-  if (negPrompt) {
-    const negPromptSpan = document.createElement('span');
-    negPromptSpan.className = 'd-block';
-    negPromptSpan.appendChild(document.createTextNode(`-(${negPrompt})`));
-    textDiv.appendChild(negPromptSpan);
+  // Helper function to create the li element
+  function createListItem() {
+    const li = document.createElement('li');
+    li.className = 'p-3 clearfix';
+    return li;
   }
 
-  return textDiv;
-}
+  // Helper function to create the text division
+  function createTextDiv(rows) {
+    const textDiv = document.createElement('div');
+    textDiv.className = 'text-wrap';
 
-function renderListItem(rows) {
-  const li = createListItem();
+    const prompt = rows[0]?.value.meta?.prompt;
+    const promptSpan = document.createElement('span');
+    promptSpan.className = 'd-block font-weight-bold';
+    promptSpan.appendChild(document.createTextNode(prompt));
+    textDiv.appendChild(promptSpan);
 
-  // Add the first image (final version)
-  const img = imgForFile(rows[0]?.value._files.image);
-  if (img) {
-    img.className = 'mr-2 float-left';
-    li.appendChild(img);
-  }
-
-  li.appendChild(createTextDiv(rows));
-  return li;
-}
-
-function renderDetailItem(rows) {
-  const li = createListItem();
-
-  // Create a div to hold all images
-  const imagesDiv = document.createElement('div');
-  imagesDiv.className = 'd-flex justify-content-start mb-2';
-
-  // Add all images across the top
-  rows.forEach(row => {
-    const img = imgForFile(row.value._files.image);
-    if (img) {
-      img.className = 'mr-2';
-      imagesDiv.appendChild(img);
+    const negPrompt = rows[0]?.value.meta?.negPrompt;
+    if (negPrompt) {
+      const negPromptSpan = document.createElement('span');
+      negPromptSpan.className = 'd-block';
+      negPromptSpan.appendChild(document.createTextNode(`-(${negPrompt})`));
+      textDiv.appendChild(negPromptSpan);
     }
-  });
 
-  li.appendChild(imagesDiv);
-  li.appendChild(createTextDiv(rows));
-  return li;
-}
+    const created = rows[0]?.value?.created;
+    if (created) {
+      const createdSpan = document.createElement('span');
+      createdSpan.className = 'd-block';
+      createdSpan.appendChild(document.createTextNode(new Date(created).toLocaleString()));
+      textDiv.appendChild(createdSpan);
+    }
 
+    return textDiv;
+  }
+
+  function renderListItem(rows) {
+    const li = createListItem();
+
+    // Add the first image (final version)
+    const img = imgForFile(rows[0]?.value._files.image);
+    if (img) {
+      img.className = 'mr-2 float-left';
+      li.appendChild(img);
+    }
+
+    li.appendChild(createTextDiv(rows));
+    return li;
+  }
+
+  function renderDetailItem(rows) {
+    const li = createListItem();
+
+    // Add all images across the top
+    const imagesDiv = document.createElement('div');
+    imagesDiv.className = 'd-flex justify-content-start mb-2';
+    rows.forEach(row => {
+      const img = imgForFile(row.value._files.image, { cache: true });
+      if (img) {
+        img.className = 'mr-2';
+        img.addEventListener('mouseover', () => {
+          initialLargeImage.src = img.src;
+        });
+        imagesDiv.appendChild(img);
+      }
+    });
+
+    li.appendChild(imagesDiv);
+    li.appendChild(createTextDiv(rows));
+
+    const initialLargeImage = imgForFile(rows[0]?.value._files.image, { cache: true });
+    initialLargeImage.width = 512;
+    initialLargeImage.height = 512;
+    const bigImgDiv = document.createElement('div');
+    bigImgDiv.className = 'd-flex justify-content-center';
+    bigImgDiv.appendChild(initialLargeImage);
+    li.appendChild(bigImgDiv);
+
+    return li;
+  }
+
+  const doDrawUpdates = async (updates) => {
+    console.log('doDrawUpdates', updates)
+    const groups = groupRows(updates.reverse().map(u => ({value: u})))
+    if (!groups.size) {
+      return;
+    }
+
+    for (const [gprompt, rows] of groups) {
+      const listLi = renderListItem(rows);
+      listLi.id = 'gen-' + gprompt;
+      const existing = document.getElementById(listLi.id);
+      if (existing) {
+        existing.replaceWith(listLi);
+      } else {
+        const div = document.getElementById('history');
+        const list = div.querySelector('ul');
+        list.insertBefore(listLi, list.firstChild);
+      }
+    }
+  };
 
 
   const doRedraw = async () => {
@@ -273,13 +325,10 @@ function renderDetailItem(rows) {
         isDetailView = !isDetailView;
       };
 
-
       listLi.onclick = toggleView;
       list.appendChild(listLi);
     }
   };
-
-
 
   async function writeImage(meta) {
     const cnv = document.getElementById('canvas')
@@ -292,8 +341,9 @@ function renderDetailItem(rows) {
   async function setupDatabase() {
     const db = Fireproof.fireproof('web-stable-diffusion');
     window.db = db
+    await redrawHistory()
     db.subscribe(async (updates) => {
-      await redrawHistory()
+      await redrawUpdates(updates)
     })
   }
   window.addEventListener('load', setupDatabase)
