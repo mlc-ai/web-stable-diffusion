@@ -162,6 +162,7 @@
 <div>
 <canvas id="canvas" width="512" height="512"></canvas>
 </div>
+<div id="history"></div>
 <div id="log"></div>
 
 <h3 id="notes">Notes</h3>
@@ -181,6 +182,258 @@
         <!-- Support retina images. -->
         <script type="text/javascript"
                 src="/assets/js/srcset-polyfill.js"></script>
+    
+<script src="dist/fireproof.iife.js"></script>
+<script>
+  let doing
+  const redrawHistory = async () => {
+    if (doing) {
+      return doing
+    }
+    doing = doRedraw().catch(e => {
+      console.error(e)
+    }).finally(() => doing = null)
+    return doing
+  }
+
+  let updating
+  const redrawUpdates = async (updates) => {
+    if (updating) {
+      return updating
+    }
+    updating = doDrawUpdates(updates).catch(e => {
+      console.error(e)
+    }).finally(() => updating = null)
+    return updating
+  }
+
+
+  function imgForFile(meta, opts = {}) {
+    if (meta.file && /image/.test(meta.type)) {
+      const img = document.createElement("img");
+      meta.file().then((file) => {
+        const src = URL.createObjectURL(file);
+        img.src = src;
+        if (!opts.cache) {
+          img.onload = () => {
+            URL.revokeObjectURL(img.src);
+          };
+        }
+      })
+      img.height = 100;
+      img.width = 100;
+      return img
+    }
+  }
+
+  function groupRows(rows) {
+    return rows.reduce((acc, row) => {
+      const prompt = row.value.meta?.prompt || '';
+      const negPrompt = row.value.meta?.negPrompt || '';
+      const gprompt = prompt + negPrompt;
+      if (gprompt) {
+        if (!acc.has(gprompt)) {
+          acc.set(gprompt, []);
+        }
+        acc.get(gprompt).push(row);
+      }
+      return acc;
+    }, new Map());
+  }
+  
+  function createListItem() {
+    const li = document.createElement('li');
+    li.className = 'p-3 clearfix';
+
+    // Set background color on hover
+    li.addEventListener('mouseover', () => {
+      li.style.backgroundColor = '#eee';
+    });
+
+    // Remove background color when not hovering
+    li.addEventListener('mouseout', () => {
+      li.style.backgroundColor = '';
+    });
+
+    return li;
+  }
+
+  // Helper function to create the text division
+  function createTextDiv(rows) {
+    const textDiv = document.createElement('div');
+    textDiv.className = 'text-wrap';
+
+    const prompt = rows[0]?.value.meta?.prompt;
+    const promptSpan = document.createElement('span');
+    promptSpan.className = 'd-block font-weight-bold';
+    promptSpan.appendChild(document.createTextNode(prompt));
+    textDiv.appendChild(promptSpan);
+
+    const negPrompt = rows[0]?.value.meta?.negPrompt;
+    if (negPrompt) {
+      const negPromptSpan = document.createElement('span');
+      negPromptSpan.className = 'd-block';
+      negPromptSpan.appendChild(document.createTextNode(`-(${negPrompt})`));
+      textDiv.appendChild(negPromptSpan);
+    }
+
+    const created = rows[0]?.value?.created;
+    if (created) {
+      const createdSpan = document.createElement('span');
+      createdSpan.className = 'd-block';
+      createdSpan.appendChild(document.createTextNode(new Date(created).toLocaleString()));
+      textDiv.appendChild(createdSpan);
+    }
+
+    return textDiv;
+  }
+
+  function renderListItem(rows) {
+    const li = createListItem();
+
+    // Add the first image (final version)
+    const img = imgForFile(rows[0]?.value._files.image);
+    if (img) {
+      img.className = 'mr-2 float-left';
+      li.appendChild(img);
+    }
+
+    li.appendChild(createTextDiv(rows));
+
+    return li;
+  }
+
+  function renderDetailItem(rows) {
+    const li = createListItem();
+
+    // Add all images across the top
+    let largeCid = rows[0]?.value._files.image.cid
+    const imagesDiv = document.createElement('div');
+    imagesDiv.className = 'justify-content-start mb-2 w-100';
+    rows.forEach(row => {
+      const img = imgForFile(row.value._files.image, { cache: true });
+      if (img) {
+        img.className = 'mr-2 mb-2';
+        img.addEventListener('mouseover', () => {
+          largeCid = row.value._files.image.cid
+          initialLargeImage.src = img.src;
+        });
+        imagesDiv.appendChild(img);
+      }
+    });
+    li.appendChild(imagesDiv);
+    li.appendChild(createTextDiv(rows));
+
+    const initialLargeImage = imgForFile(rows[0]?.value._files.image, { cache: true });
+    initialLargeImage.width = 512;
+    initialLargeImage.height = 512;
+    const bigImgDiv = document.createElement('div');
+    bigImgDiv.className = 'd-flex justify-content-center';
+    bigImgDiv.appendChild(initialLargeImage);
+    li.appendChild(document.createElement('br'));
+    li.appendChild(bigImgDiv);
+    li.appendChild(document.createElement('br'));
+
+    // Create the download button
+    const downloadButton = document.createElement('button');
+    downloadButton.className = 'btn btn-primary m-2';
+    downloadButton.innerHTML = 'Download Displayed Image';
+    downloadButton.addEventListener('click', async () => {
+      const a = document.createElement('a');
+      a.href = initialLargeImage.src
+      a.download = `websd.${largeCid}.png`
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+    li.appendChild(downloadButton);
+
+    return li;
+  }
+
+  const doDrawUpdates = async (updates) => {
+    const groups = groupRows(updates.reverse().map(u => ({ value: u })))
+    if (!groups.size) {
+      return;
+    }
+
+    for (const [gprompt, rows] of groups) {
+      const listLi = renderListItem(rows);
+      listLi.id = 'gen-' + gprompt;
+      const existing = document.getElementById(listLi.id);
+      if (existing) {
+        existing.replaceWith(listLi);
+      } else {
+        const div = document.getElementById('history');
+        const list = div.querySelector('ul');
+        list.insertBefore(listLi, list.firstChild);
+      }
+    }
+  };
+
+
+  const doRedraw = async () => {
+    const recent = await db.changes();
+    const groups = groupRows(recent.rows.reverse());
+    if (!groups.size) {
+      return;
+    }
+    const div = document.getElementById('history');
+    div.innerHTML = '<h3>Local History</h3><p>All images are stored in your browser using the open-source <a href="https://use-fireproof.com">Fireproof</a> live database.</p>';
+    const list = div.appendChild(document.createElement('ul'));
+    list.className = 'list-unstyled';
+
+    let first = true
+    for (const [gprompt, rows] of groups) {
+      const listLi = first ? renderDetailItem(rows) : renderListItem(rows);
+      first = false
+
+      listLi.id = 'gen-' + gprompt;
+
+      let isDetailView = false;
+      let detailLi = null;
+
+      const toggleView = () => {
+        if (isDetailView) {
+          // Replace detail view with list view
+          list.replaceChild(listLi, detailLi);
+        } else {
+          // Render detail view only if it doesn't already exist
+          if (!detailLi) {
+            detailLi = renderDetailItem(rows);
+            detailLi.id = listLi.id;
+            detailLi.onclick = toggleView;
+          }
+          // Replace list view with detail view
+          list.replaceChild(detailLi, listLi);
+        }
+        isDetailView = !isDetailView;
+      };
+
+      listLi.onclick = toggleView;
+      list.appendChild(listLi);
+    }
+  };
+
+  async function writeImage(meta) {
+    const cnv = document.getElementById('canvas')
+    const data = cnv.toDataURL()
+    const blob = await (await fetch(data)).blob()
+    var file = new File([blob], "stable-diffusion", { type: blob.type });
+    await db.put({ meta, _files: { image: file }, created: Date.now() })
+  }
+
+  async function setupDatabase() {
+    const db = Fireproof.fireproof('web-stable-diffusion');
+    window.db = db
+    await redrawHistory()
+    db.subscribe(async (updates) => {
+      await redrawUpdates(updates)
+    })
+  }
+  window.addEventListener('load', setupDatabase)
+</script>
+    
     </body>
 
 </html>
