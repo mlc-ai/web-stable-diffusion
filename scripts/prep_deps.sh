@@ -6,20 +6,20 @@ emcc --version
 npm --version
 cargo --version
 
-TVM_HOME_SET="${TVM_HOME:-}"
+TEMP_TVM_HOME_SET="${TEMP_TVM_HOME:-}"
 
-if [[ -z ${TVM_HOME_SET} ]]; then
+if [[ -z ${TEMP_TVM_HOME_SET} ]]; then
     if [[ ! -d "3rdparty/tvm" ]]; then
-        echo "Do not find TVM_HOME env variable, cloning a version as source".
+        echo "Do not find TEMP_TVM_HOME env variable, cloning a version as source".
         git clone https://github.com/apache/tvm 3rdparty/tvm --branch unity --recursive
     fi
-    export TVM_HOME="${TVM_HOME:-3rdparty/tvm}"
+    export TEMP_TVM_HOME="${TEMP_TVM_HOME:-3rdparty/tvm}"
 fi
 
 export TOKENZIER_WASM_HOME="3rdparty/tokenizers-wasm"
 
 mkdir -p dist
-cd ${TVM_HOME}/web && make && npm install && npm run bundle && cd -
+cd ${TEMP_TVM_HOME}/web && make && npm install && npm run bundle && cd -
 git submodule update --init
 cd ${TOKENZIER_WASM_HOME} && wasm-pack build --target web && cd -
 rm -rf dist/tokenizers-wasm

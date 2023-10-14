@@ -76,7 +76,7 @@ def trace_models(
 ) -> Tuple[tvm.IRModule, Dict[str, List[tvm.nd.NDArray]]]:
     from diffusers import StableDiffusionPipeline
 
-    pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5")
+    pipe = StableDiffusionPipeline.from_pretrained("SG161222/Realistic_Vision_V5.1_noVAE")
     clip = trace.clip_to_text_embeddings(pipe)
     unet = trace.unet_latents_to_noise_pred(pipe, device_str)
     vae = trace.vae_to_image(pipe)
