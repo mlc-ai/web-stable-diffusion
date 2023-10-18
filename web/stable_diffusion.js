@@ -408,6 +408,7 @@ class StableDiffusionInstance {
     this.config = undefined;
     this.generateInProgress = false;
     this.logger = console.log;
+    this.model = "Stable-Diffusion-XL"
   }
   /**
    * Initialize TVM
@@ -505,6 +506,18 @@ class StableDiffusionInstance {
   async #asyncInitConfig() {
     if (this.config !== undefined) return;
     this.config = await (await fetch("stable-diffusion-config.json")).json();
+  
+    var model_param_url = undefined;
+    var model_lib_url = undefined;
+    if (this.config.model_lib_map[this.model] !== undefined) {
+      model_param_url = this.config.param_dict[this.model];
+      model_lib_url = this.config.model_lib_map[this.model];
+    }
+    else{
+      throw Error("Model not found");
+    }
+    this.config.wasmUrl = model_lib_url;
+    this.config.cacheUrl = model_param_url;
   }
 
   /**
@@ -595,11 +608,15 @@ class StableDiffusionInstance {
    * Reset the instance;
    */
   reset() {
-    this.tvm = undefined;
     if (this.pipeline !== undefined) {
       this.pipeline.dispose();
     }
     this.pipeline = undefined;
+    if (this.tvm !== undefined) {
+      this.tvm.dispose();
+      this.tvm = undefined;
+    }
+    this.config = undefined;
   }
 }
 
@@ -613,3 +630,15 @@ tvmjsGlobalEnv.asyncOnRPCServerLoad = async function (tvm) {
   const inst = new StableDiffusionInstance();
   await inst.asyncInitOnRPCServerLoad(tvm);
 };
+
+function handle_model_change() {
+  var e = document.getElementById("modelId");
+  function onChange() {
+    localStableDiffusionInst.reset();
+    localStableDiffusionInst.model = e.value;
+    localStableDiffusionInst.logger("model changed to " + e.value)
+  }
+  e.onchange = onChange;
+}
+
+handle_model_change()

@@ -3,7 +3,13 @@
         "dist/scheduler_dpm_solver_multistep_consts.json",
         "dist/scheduler_pndm_consts.json"
     ],
-    "wasmUrl": "dist/stable_diffusion_webgpu.wasm",
-    "cacheUrl": "web-sd-shards-v1-5/",
-    "tokenizer": "openai/clip-vit-large-patch14"
+    "tokenizer": "openai/clip-vit-large-patch14",
+    "model_lib_map": {
+        "Stable-Diffusion-XL": "dist/stable_diffusion_webgpu.wasm",
+        "Stable-Diffusion-1.5": "dist/stable_diffusion_webgpu.wasm"
+    },
+    "param_dict": {
+        "Stable-Diffusion-XL": "web-sd-shards-v1-5/",
+        "Stable-Diffusion-1.5": "web-sd-shards-v1-5/"
+    }
 }
