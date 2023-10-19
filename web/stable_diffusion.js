@@ -484,10 +484,10 @@ class DiffusionXLPipeline {
     );
 
     this.schedulerConsts = schedulerConsts;
-    this.clipToTextEmbeddings = this.tvm.detachFromCurrentScope(
+    this.clipToTextEmbeddings1 = this.tvm.detachFromCurrentScope(
       this.vm.getFunction("clip")
     );
-    this.clipParams = this.tvm.detachFromCurrentScope(
+    this.clipParams1 = this.tvm.detachFromCurrentScope(
       this.tvm.getParamsFromCache("clip", cacheMetadata.clipParamSize)
     );
     this.clipToTextEmbeddings2 = this.tvm.detachFromCurrentScope(
@@ -538,8 +538,8 @@ class DiffusionXLPipeline {
     this.vaeToImage.dispose();
     this.unetParams.dispose();
     this.unetLatentsToNoisePred.dispose();
-    this.clipParams.dispose();
-    this.clipToTextEmbeddings.dispose();
+    this.clipParams1.dispose();
+    this.clipToTextEmbeddings1.dispose();
     this.clipParams2.dispose();
     this.clipToTextEmbeddings2.dispose();
     this.vm.dispose();
@@ -573,11 +573,11 @@ class DiffusionXLPipeline {
   ) {
     this.tvm.beginScope();
     // get latents
-    const latentShape = [1, 4, 64, 64];
+    const latentShape = [1, 4, 128, 128];
 
     var unetNumSteps;
     if (schedulerId == 0) {
-      scheduler = new TVMDPMSolverMultistepScheduler(
+      scheduler = new EulerDiscreteScheduler(
         this.schedulerConsts[0], latentShape, this.tvm, this.device, this.vm);
       unetNumSteps = this.schedulerConsts[0]["num_steps"];
     } else {
@@ -590,20 +590,40 @@ class DiffusionXLPipeline {
       progressCallback("clip", 0, 1, totalNumSteps);
     }
 
-    const embeddings = this.tvm.withNewScope(() => {
-      let posInputIDs = this.tokenize(prompt);
-      let negInputIDs = this.tokenize(negPrompt);
-      const posEmbeddings = this.clipToTextEmbeddings(
-        posInputIDs, this.clipParams);
-      const negEmbeddings = this.clipToTextEmbeddings(
-        negInputIDs, this.clipParams);
+    const [embeddings, pool_embeddings] = this.tvm.withNewScope(() => {
+      let posInputIDs1 = this.tokenize(prompt, this.tokenizer1);
+      let posInputIDs2 = this.tokenize(prompt, this.tokenizer2);
+      const posEmbeddings1 = this.clipToTextEmbeddings1(
+        posInputIDs1, this.clipParams1)[0];
+      const posTemp = this.clipToTextEmbeddings2(
+        posInputIDs2, this.clipParams2);
+      const posEmbeddings2 = temp[0];
+      const poolPosEmbeddings = temp[1];
+
+      let negInputIDs1 = this.tokenize(negPrompt, this.tokenizer1);
+      let negInputIDs2 = this.tokenize(negPrompt, this.tokenizer2);
+      const negEmbeddings1 = this.clipToTextEmbeddings1(
+        negInputIDs1, this.clipParams1)[0];
+      const negTemp = this.clipToTextEmbeddings2(
+        negInputIDs2, this.clipParams2);
+      const negEmbeddings2 = negTemp[0];
+      const poolNegEmbeddings = negTemp[1];
+
+      const posEmbeddings = this.concatEncoderOutputs(posEmbeddings1, posEmbeddings2);
+      const negEmbeddings = this.concatEncoderOutputs(negEmbeddings1, negEmbeddings2);
+
       // maintain new latents
-      return this.tvm.detachFromCurrentScope(
+      //TODO: zero out embeddings when negPrompt is empty
+      return [this.tvm.detachFromCurrentScope(
         this.concatEmbeddings(negEmbeddings, posEmbeddings)
-      );
+      ),
+      this.tvm.detachFromCurrentScope(
+        this.concatPoolEmbeddings(poolNegEmbeddings, poolPosEmbeddings)
+      )
+      ];
     });
     // use uniform distribution with same variance as normal(0, 1)
-    const scale = Math.sqrt(12) / 2;
+    const scale = 13.1585;
     let latents = this.tvm.detachFromCurrentScope(
       this.tvm.uniform(latentShape, -scale, scale, this.tvm.webgpu())
     );
@@ -630,8 +650,13 @@ class DiffusionXLPipeline {
       // recycle noisePred, track latents manually
       const newLatents = this.tvm.withNewScope(() => {
         this.tvm.attachToCurrentScope(latents);
+        const latent_model_input = this.catLatents(latents);
+        const scaled_latent_model_input = scheduler.scaleModelInput(latent_model_input, counter)
+        //TODO: convert add_time_ids to TVM array
+        const add_time_ids = [[1024., 1024., 0., 0., 1024., 1024.],[1024., 1024., 0., 0., 1024., 1024.]]
         const noisePred = this.unetLatentsToNoisePred(
-          latents, timestep, embeddings, this.unetParams);
+          scaled_latent_model_input, timestep, embeddings, 
+            pool_embeddings, add_time_ids, this.unetParams);
         // maintain new latents
         return this.tvm.detachFromCurrentScope(
           scheduler.step(noisePred, latents, counter)
