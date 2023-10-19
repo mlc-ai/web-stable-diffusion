@@ -180,6 +180,73 @@ class TVMDPMSolverMultistepScheduler {
   }
 }
 
+class EulerDiscreteScheduler {
+  constructor(schedulerConsts, latentShape, tvm, device, vm) {
+    this.timestep = [];
+    this.sigma = [];
+    this.lastModelOutput = undefined;
+    this.ScaleModelInputFunc = undefined;
+    this.stepFunc = undefined;
+    this.tvm = tvm;
+
+    // prebuild constants
+    // principle: always detach for class members
+    // to avoid recycling output scope.
+    function loadConsts(output, dtype, input) {
+      for (let t = 0; t < input.length; ++t) {
+        output.push(
+          tvm.detachFromCurrentScope(
+            tvm.empty([], dtype, device).copyFrom([input[t]])
+          )
+        );
+      }
+    }
+    loadConsts(this.timestep, "int32", schedulerConsts["timesteps"]);
+    loadConsts(this.sigma, "float32", schedulerConsts["sigma"]);
+
+    this.lastModelOutput = this.tvm.detachFromCurrentScope(
+      this.tvm.empty(latentShape, "float32", device)
+    )
+    this.ScaleModelInputFunc = tvm.detachFromCurrentScope(
+      vm.getFunction("euler_discrete_scheduler_step")
+    )
+    this.stepFunc = tvm.detachFromCurrentScope(
+      vm.getFunction("euler_discrete_scheduler_step")
+    )
+  }
+
+  dispose() {
+    for (let t = 0; t < this.timestep.length; ++t) {
+      this.timestep[t].dispose();
+      this.sigma[t].dispose();
+    }
+
+    this.lastModelOutput.dispose();
+    this.ScaleModelInputFunc.dispose();
+    this.stepFunc.dispose();
+  }
+
+  step(modelOutput, sample, counter) {
+    const prevLatents = this.stepFunc(
+      sample,
+      modelOutput,
+      this.sigma[counter],
+      this.sigma[counter+1],
+    );
+
+    return prevLatents;
+  }
+
+  scaleModelInput(sample, counter) {
+    const result = this.ScaleModelInputFunc(
+      sample,
+      this.sigma[counter],
+    );
+
+    return result;
+  }
+}
+
 class StableDiffusionPipeline {
   constructor(tvm, tokenizer, schedulerConsts, cacheMetadata) {
     if (cacheMetadata == undefined) {
@@ -397,6 +464,10 @@ class StableDiffusionPipeline {
     this.tvm.clearCanvas();
   }
 };
+
+class DiffusionXLPipeline {
+  //TODO
+}
 
 /**
  * A instance that can be used to facilitate deployment.
