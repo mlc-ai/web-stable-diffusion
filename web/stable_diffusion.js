@@ -791,7 +791,7 @@ class StableDiffusionInstance {
    * @param schedulerConstUrl The scheduler constant.
    * @param tokenizerName The name of the tokenizer.
    */
-  async #asyncInitPipeline(schedulerConstUrl, tokenizerName) {
+  async #asyncInitPipeline(schedulerConstUrl, tokenizerName, tokenizerName2) {
     if (this.tvm == undefined) {
       throw Error("asyncInitTVM is not called");
     }
@@ -800,11 +800,24 @@ class StableDiffusionInstance {
     for (let i = 0; i < schedulerConstUrl.length; ++i) {
       schedulerConst.push(await (await fetch(schedulerConstUrl[i])).json())
     }
-    const tokenizer = await tvmjsGlobalEnv.getTokenizer(tokenizerName);
-    this.pipeline = this.tvm.withNewScope(() => {
-      return new StableDiffusionPipeline(this.tvm, tokenizer, schedulerConst, this.tvm.cacheMetadata);
-    });
-    await this.pipeline.asyncLoadWebGPUPiplines();
+    if (this.model == "Stable-Diffusion-XL") {
+      //TODO: comment this
+      console.log("entered SDXL pipeline: Not supported yet")
+      const tokenizer1 = await tvmjsGlobalEnv.getTokenizer(tokenizerName);
+      const tokenizer2 = await tvmjsGlobalEnv.getTokenizer(tokenizerName2);
+      this.pipeline = this.tvm.withNewScope(() => {
+        return new DiffusionXLPipeline(this.tvm, tokenizer1, tokenizer2, schedulerConst, this.tvm.cacheMetadata);
+      });
+      await this.pipeline.asyncLoadWebGPUPiplines();
+    }
+    else {
+      console.log("entered SD pipeline")
+      const tokenizer = await tvmjsGlobalEnv.getTokenizer(tokenizerName);
+      this.pipeline = this.tvm.withNewScope(() => {
+        return new StableDiffusionPipeline(this.tvm, tokenizer, schedulerConst, this.tvm.cacheMetadata);
+      });
+      await this.pipeline.asyncLoadWebGPUPiplines();
+    }
   }
 
   /**
@@ -857,7 +870,7 @@ class StableDiffusionInstance {
     if (this.pipeline !== undefined) return;
     await this.#asyncInitConfig();
     await this.#asyncInitTVM(this.config.wasmUrl, this.config.cacheUrl);
-    await this.#asyncInitPipeline(this.config.schedulerConstUrl, this.config.tokenizer);
+    await this.#asyncInitPipeline(this.config.schedulerConstUrl, this.config.tokenizer, this.config.tokenizer2);
   }
 
   /**
