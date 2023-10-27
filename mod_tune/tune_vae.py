@@ -7265,9 +7265,9 @@ def tune(mod: tvm.IRModule) -> None:
             max_workers=5,
         ),
         runner=ms.runner.LocalRunner(),
-        work_dir="log_db_tuning",
-        max_trials_global=300,
-        max_trials_per_task=300,
+        work_dir="log_db_tuning_vae",
+        max_trials_global=19500,
+        max_trials_per_task=500,
         strategy=ms.search_strategy.EvolutionarySearch(init_min_unmeasured=10, max_fail_count=20),
     )
 

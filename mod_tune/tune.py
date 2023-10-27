@@ -18,7 +18,7 @@ def tune(mod: tvm.IRModule) -> None:
         target=tvm.target.Target("apple/m1-gpu-restricted"),
         params={},
         builder=ms.builder.LocalBuilder(
-            max_workers=2,
+            max_workers=6,
             timeout_sec = 300
         ),
         runner=ms.runner.LocalRunner(timeout_sec = 300),
