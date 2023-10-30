@@ -131,7 +131,6 @@ def build(mod: tvm.IRModule, args: Dict) -> None:
     db = ms.database.create(work_dir=args.db_path)
     with args.target, db, tvm.transform.PassContext(opt_level=3):
         mod_deploy = relax.transform.MetaScheduleApplyDatabase(enable_warning=True)(mod)
-        mod_deploy = tvm.tir.transform.DefaultGPUSchedule()(mod_deploy)
 
     debug_dump_script(mod_deploy, "mod_build_stage.py", args)
 
