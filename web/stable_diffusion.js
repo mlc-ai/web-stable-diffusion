@@ -325,8 +325,8 @@ class StableDiffusionPipeline {
   /**
    * async preload webgpu pipelines when possible.
    */
-  async asyncLoadWebGPUPiplines() {
-    await this.tvm.asyncLoadWebGPUPiplines(this.vm.getInternalModule());
+  async asyncLoadWebGPUPipelines() {
+    await this.tvm.asyncLoadWebGPUPipelines(this.vm.getInternalModule());
   }
 
   /**
@@ -559,8 +559,8 @@ class DiffusionXLPipeline {
     return this.tvm.empty([1, this.maxTokenLength], "int32", this.device).copyFrom(inputIDs);
   }
 
-  async asyncLoadWebGPUPiplines() {
-    await this.tvm.asyncLoadWebGPUPiplines(this.vm.getInternalModule());
+  async asyncLoadWebGPUPipelines() {
+    await this.tvm.asyncLoadWebGPUPipelines(this.vm.getInternalModule());
   }
 
   async generate(
@@ -808,7 +808,7 @@ class StableDiffusionInstance {
       this.pipeline = this.tvm.withNewScope(() => {
         return new DiffusionXLPipeline(this.tvm, tokenizer1, tokenizer2, schedulerConst, this.tvm.cacheMetadata);
       });
-      await this.pipeline.asyncLoadWebGPUPiplines();
+      await this.pipeline.asyncLoadWebGPUPipelines();
     }
     else {
       console.log("entered SD pipeline")
@@ -816,7 +816,7 @@ class StableDiffusionInstance {
       this.pipeline = this.tvm.withNewScope(() => {
         return new StableDiffusionPipeline(this.tvm, tokenizer, schedulerConst, this.tvm.cacheMetadata);
       });
-      await this.pipeline.asyncLoadWebGPUPiplines();
+      await this.pipeline.asyncLoadWebGPUPipelines();
     }
   }
 
