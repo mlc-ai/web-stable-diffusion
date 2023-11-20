@@ -208,7 +208,7 @@ class EulerDiscreteScheduler {
       this.tvm.empty(latentShape, "float32", device)
     )
     this.ScaleModelInputFunc = tvm.detachFromCurrentScope(
-      vm.getFunction("euler_discrete_scheduler_step")
+      vm.getFunction("euler_discrete_scheduler_scale")
     )
     this.stepFunc = tvm.detachFromCurrentScope(
       vm.getFunction("euler_discrete_scheduler_step")
@@ -393,6 +393,16 @@ class StableDiffusionPipeline {
       this.tvm.uniform(latentShape, -scale, scale, this.tvm.webgpu())
     );
     this.tvm.endScope();
+
+
+    // const image = this.tvm.withNewScope(() => {
+    //   return this.tvm.detachFromCurrentScope(
+    //     this.vaeToImage(latents, this.vaeParams)
+    //   )
+    // });
+
+    // await this.device.sync();
+
     //---------------------------
     // Stage 1: UNet + Scheduler
     //---------------------------
@@ -443,6 +453,23 @@ class StableDiffusionPipeline {
     }
     scheduler.dispose();
     embeddings.dispose();
+
+    await this.device.sync();
+    
+    // allocate a gpu arr and async copy to it.
+    const cpu_arr = this.tvm.withNewScope(() => {
+      return this.tvm.detachFromCurrentScope(
+        this.tvm.empty(latents.shape, latents.dtype, this.tvm.cpu(0))
+      )
+    });
+    console.log("empty arr" + cpu_arr.toArray());
+
+    cpu_arr.copyFrom(latents);
+    await this.tvm.webgpu().sync();
+
+    console.log("final latents" + cpu_arr.toArray());
+
+
     //-----------------------------
     // Stage 2: VAE and draw image
     //-----------------------------
@@ -493,7 +520,6 @@ class DiffusionXLPipeline {
     this.clipToTextEmbeddings2 = this.tvm.detachFromCurrentScope(
       this.vm.getFunction("clip2")
     );
-    //TODO: add clip2 cache meta data
     this.clipParams2 = this.tvm.detachFromCurrentScope(
       this.tvm.getParamsFromCache("clip2", cacheMetadata.clip2ParamSize)
     );
@@ -522,7 +548,7 @@ class DiffusionXLPipeline {
       this.vm.getFunction("cat_latents")
     );
     this.concatEncoderOutputs = this.tvm.detachFromCurrentScope(
-      this.vm.getFunction("concat_encoder_outputs")
+      this.vm.getFunction("concat_enocder_outputs")
     );
 
   }
@@ -576,10 +602,11 @@ class DiffusionXLPipeline {
     const latentShape = [1, 4, 128, 128];
 
     var unetNumSteps;
+    //TODO: set up scheduler
     if (schedulerId == 0) {
       scheduler = new EulerDiscreteScheduler(
-        this.schedulerConsts[0], latentShape, this.tvm, this.device, this.vm);
-      unetNumSteps = this.schedulerConsts[0]["num_steps"];
+        this.schedulerConsts[2], latentShape, this.tvm, this.device, this.vm);
+      unetNumSteps = this.schedulerConsts[2]["num_steps"];
     } else {
       //raise error
       throw Error("not supported scheduler");
@@ -594,21 +621,22 @@ class DiffusionXLPipeline {
       let posInputIDs1 = this.tokenize(prompt, this.tokenizer1);
       let posInputIDs2 = this.tokenize(prompt, this.tokenizer2);
       const posEmbeddings1 = this.clipToTextEmbeddings1(
-        posInputIDs1, this.clipParams1)[0];
+        posInputIDs1, this.clipParams1).get(0);
       const posTemp = this.clipToTextEmbeddings2(
         posInputIDs2, this.clipParams2);
-      const posEmbeddings2 = temp[0];
-      const poolPosEmbeddings = temp[1];
+      const posEmbeddings2 = posTemp.get(0);
+      const poolPosEmbeddings = posTemp.get(1);
 
       let negInputIDs1 = this.tokenize(negPrompt, this.tokenizer1);
       let negInputIDs2 = this.tokenize(negPrompt, this.tokenizer2);
       const negEmbeddings1 = this.clipToTextEmbeddings1(
-        negInputIDs1, this.clipParams1)[0];
+        negInputIDs1, this.clipParams1).get(0);
       const negTemp = this.clipToTextEmbeddings2(
         negInputIDs2, this.clipParams2);
-      const negEmbeddings2 = negTemp[0];
-      const poolNegEmbeddings = negTemp[1];
-
+      const negEmbeddings2 = negTemp.get(0);
+      const poolNegEmbeddings = negTemp.get(1);
+      console.log("posEmbeddings1")
+      console.log(posEmbeddings1)
       const posEmbeddings = this.concatEncoderOutputs(posEmbeddings1, posEmbeddings2);
       const negEmbeddings = this.concatEncoderOutputs(negEmbeddings1, negEmbeddings2);
 
@@ -623,7 +651,8 @@ class DiffusionXLPipeline {
       ];
     });
     // use uniform distribution with same variance as normal(0, 1)
-    const scale = 13.1585;
+    //TODO: handle the initialization
+    const scale = Math.sqrt(12) / 2;
     let latents = this.tvm.detachFromCurrentScope(
       this.tvm.uniform(latentShape, -scale, scale, this.tvm.webgpu())
     );
@@ -652,8 +681,8 @@ class DiffusionXLPipeline {
         this.tvm.attachToCurrentScope(latents);
         const latent_model_input = this.catLatents(latents);
         const scaled_latent_model_input = scheduler.scaleModelInput(latent_model_input, counter)
-        //TODO: convert add_time_ids to TVM array
-        const add_time_ids = [[1024., 1024., 0., 0., 1024., 1024.],[1024., 1024., 0., 0., 1024., 1024.]]
+        const array_id = [1024., 1024., 0., 0., 1024., 1024., 1024., 1024., 0., 0., 1024., 1024.]
+        let add_time_ids = this.tvm.empty([2, 6], "float32", this.tvm.webgpu()).copyFrom(array_id);
         const noisePred = this.unetLatentsToNoisePred(
           scaled_latent_model_input, timestep, embeddings, 
             pool_embeddings, add_time_ids, this.unetParams);
@@ -801,8 +830,6 @@ class StableDiffusionInstance {
       schedulerConst.push(await (await fetch(schedulerConstUrl[i])).json())
     }
     if (this.model == "Stable-Diffusion-XL") {
-      //TODO: comment this
-      console.log("entered SDXL pipeline: Not supported yet")
       const tokenizer1 = await tvmjsGlobalEnv.getTokenizer(tokenizerName);
       const tokenizer2 = await tvmjsGlobalEnv.getTokenizer(tokenizerName2);
       this.pipeline = this.tvm.withNewScope(() => {

@@ -146,6 +146,8 @@ class TVMSDPipeline:
         # Concatenate the text embeddings.
         text_embeddings = self.concat_embeddings(*list_text_embeddings)
 
+        print("text embedding")
+
         # Randomly initialize the latents.
         latents = torch.randn(
             (1, 4, 64, 64),
