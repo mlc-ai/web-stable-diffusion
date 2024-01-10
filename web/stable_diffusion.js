@@ -493,7 +493,6 @@ class StableDiffusionPipeline {
 };
 
 class DiffusionXLPipeline {
-  //TODO
   constructor(tvm, tokenizer1, tokenizer2, schedulerConsts, cacheMetadata) {
     if (cacheMetadata == undefined) {
       throw Error("Expect cacheMetadata");
@@ -602,8 +601,7 @@ class DiffusionXLPipeline {
     const latentShape = [1, 4, 128, 128];
 
     var unetNumSteps;
-    //TODO: set up scheduler
-    if (schedulerId == 0) {
+    if (schedulerId == 2) {
       scheduler = new EulerDiscreteScheduler(
         this.schedulerConsts[2], latentShape, this.tvm, this.device, this.vm);
       unetNumSteps = this.schedulerConsts[2]["num_steps"];
@@ -651,8 +649,7 @@ class DiffusionXLPipeline {
       ];
     });
     // use uniform distribution with same variance as normal(0, 1)
-    //TODO: handle the initialization
-    const scale = Math.sqrt(12) / 2;
+    const scale = Math.sqrt(12) / 2 * 13.1585;
     let latents = this.tvm.detachFromCurrentScope(
       this.tvm.uniform(latentShape, -scale, scale, this.tvm.webgpu())
     );

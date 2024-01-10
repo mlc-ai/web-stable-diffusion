@@ -47,6 +47,7 @@
   <select name="scheduler" id="schedulerId">
     <option value="0">Multi-step DPM Solver (20 steps)</option>
     <option value="1">PNDM (50 steps)</option>
+    <option value="2">Euler Discreet</option>
   </select>
 
   <br>
@@ -64,6 +65,32 @@
   </div>
   <button onclick="tvmjsGlobalEnv.asyncOnGenerate()">Generate</button>
 </div>
+
+<script>
+  function updateSchedulerBasedOnModel() {
+      var selectedModel = document.getElementById('modelId').value;
+      var schedulerDropdown = document.getElementById('schedulerId');
+      
+      if (selectedModel === 'Stable-Diffusion-XL') {
+          schedulerDropdown.value = '2'; // Set to Multi-step DPM Solver
+          // Optionally, disable other options
+          for (var i = 0; i < schedulerDropdown.options.length; i++) {
+              schedulerDropdown.options[i].disabled = (schedulerDropdown.options[i].value !== '2');
+          }
+      } else {
+          schedulerDropdown.value = '0'; // Set to Multi-step DPM Solver
+          // Optionally, disable other options
+          for (var i = 0; i < schedulerDropdown.options.length; i++) {
+              schedulerDropdown.options[i].disabled = (schedulerDropdown.options[i].value !== '0' && schedulerDropdown.options[i].value !== '1');
+          }
+      }
+  }
+
+  window.onload = function() {
+      updateSchedulerBasedOnModel(); // Run when page loads
+      document.getElementById('modelId').addEventListener('change', updateSchedulerBasedOnModel); // Also run on model change
+  }
+</script>
 
 <div>
 <canvas id="canvas" width="512" height="512"></canvas>
