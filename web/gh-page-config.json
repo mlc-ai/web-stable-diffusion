@@ -1,9 +1,17 @@
 {
     "schedulerConstUrl": [
         "dist/scheduler_dpm_solver_multistep_consts.json",
-        "dist/scheduler_pndm_consts.json"
+        "dist/scheduler_pndm_consts.json",
+        "dist/scheduler_euler_discrete_consts.json"
     ],
-    "wasmUrl": "dist/stable_diffusion_webgpu.wasm",
-    "cacheUrl": "https://huggingface.co/mlc-ai/web-sd/resolve/main/web-sd-shards-v1-5/",
-    "tokenizer": "openai/clip-vit-large-patch14"
+    "tokenizer": "openai/clip-vit-large-patch14",
+    "tokenizer2": "openai/clip-vit-large-patch14",
+    "model_lib_map": {
+        "Stable-Diffusion-XL": "dist/stable_diffusion_xl.wasm",
+        "Stable-Diffusion-1.5": "dist/stable_diffusion_webgpu.wasm"
+    },
+    "param_dict": {
+        "Stable-Diffusion-XL": "web-sd-shards-xl/",
+        "Stable-Diffusion-1.5": "https://huggingface.co/mlc-ai/web-sd/resolve/main/web-sd-shards-v1-5/"
+    }
 }

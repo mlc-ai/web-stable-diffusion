@@ -8,12 +8,10 @@
     "tokenizer2": "openai/clip-vit-large-patch14",
     "model_lib_map": {
         "Stable-Diffusion-XL": "dist/stable_diffusion_xl.wasm",
-        "Stable-Diffusion-1.5": "dist/stable_diffusion_webgpu.wasm",
-        "V1": "dist/stable_diffusion_webgpu.wasm"
+        "Stable-Diffusion-1.5": "dist/stable_diffusion_webgpu.wasm"
     },
     "param_dict": {
         "Stable-Diffusion-XL": "web-sd-shards-xl/",
-        "Stable-Diffusion-1.5": "web-sd-shards-v1-5/",
-        "V1": "web-sd-shards-v1-5/"
+        "Stable-Diffusion-1.5": "web-sd-shards-v1-5/"
     }
 }
