@@ -79,25 +79,26 @@ def vae_to_image(pipe) -> tvm.IRModule:
             self.vae = vae
 
         def forward(self, latents):
-            latents = 1 / 0.18215 * latents
-            z = self.vae.post_quant_conv(latents)
-            image = self.vae.decoder(z)
+            # Scale the latents so that it can be decoded by VAE.
+            latents = 1 / 0.13025 * latents
+            # VAE decode
+            # z = self.vae.post_quant_conv(latents)
+            image = self.vae.decode(latents, return_dict=False)[0]
+            # Image normalization
             image = (image / 2 + 0.5).clamp(min=0, max=1)
             image = (image.permute(0, 2, 3, 1) * 255).round()
             return image
 
-    vae = pipe.vae
+    vae = utils.get_vae(pipe, "1.5")
     vae_to_image = VAEModelWrapper(vae)
 
-    z = torch.rand((1, 4, 64, 64), dtype=torch.float32)
-    mod = dynamo_capture_subgraphs(
-        vae_to_image.forward,
-        z,
+    graph = fx.symbolic_trace(vae_to_image)
+    mod = from_fx(
+        graph,
+        [((1, 4, 64, 64), "float32")],
         keep_params_as_input=True,
     )
-    assert len(mod.functions) == 1
-
-    return tvm.IRModule({"vae": mod["subgraph_0"]})
+    return tvm.IRModule({"vae": mod["main"]})
 
 
 def image_to_rgba() -> tvm.IRModule:

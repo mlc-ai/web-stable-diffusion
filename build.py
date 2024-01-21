@@ -112,6 +112,7 @@ def legalize_and_lift_params(
     mod = relax.pipeline.get_pipeline()(mod)
     mod = relax.transform.DeadCodeElimination(entry_funcs)(mod)
     mod = relax.transform.LiftTransformParams()(mod)
+    mod = relax.transform.BundleModelParams()(mod)
     mod_transform, mod_deploy = utils.split_transform_deploy_mod(
         mod, model_names, entry_funcs
     )

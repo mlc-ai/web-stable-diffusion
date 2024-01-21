@@ -6,6 +6,7 @@ import tvm
 from tvm import relax
 
 from .models.unet_2d_condition import TVMUNet2DConditionModel
+from .models.autoencoder_kl import AutoencoderKL
 
 
 def detect_available_torch_device() -> str:
@@ -117,3 +118,70 @@ def load_params(artifact_path: str, device) -> Dict[str, List[tvm.nd.NDArray]]:
             plist.append(params[f"{model}_{i}"])
         pdict[model] = plist
     return pdict
+
+def get_vae(
+    pipe,
+    type
+):
+    if type == "1.5":
+        model = AutoencoderKL(
+            act_fn = "silu",
+            block_out_channels = [
+                128,
+                256,
+                512,
+                512
+            ],
+            down_block_types = [
+                "DownEncoderBlock2D",
+                "DownEncoderBlock2D",
+                "DownEncoderBlock2D",
+                "DownEncoderBlock2D"
+            ],
+            in_channels = 3,
+            latent_channels = 4,
+            layers_per_block = 2,
+            norm_num_groups = 32,
+            out_channels = 3,
+            sample_size = 512,
+            up_block_types = [
+                "UpDecoderBlock2D",
+                "UpDecoderBlock2D",
+                "UpDecoderBlock2D",
+                "UpDecoderBlock2D"
+            ]
+        )
+    elif type == "XL":
+        model = AutoencoderKL(
+            act_fn = "silu",
+            block_out_channels = [
+                128,
+                256,
+                512,
+                512
+            ],
+            down_block_types = [
+                "DownEncoderBlock2D",
+                "DownEncoderBlock2D",
+                "DownEncoderBlock2D",
+                "DownEncoderBlock2D"
+            ],
+            in_channels = 3,
+            latent_channels = 4,
+            layers_per_block = 2,
+            norm_num_groups = 32,
+            out_channels = 3,
+            sample_size = 1024,
+            scaling_factor = 0.13025,
+            up_block_types = [
+                "UpDecoderBlock2D",
+                "UpDecoderBlock2D",
+                "UpDecoderBlock2D",
+                "UpDecoderBlock2D"
+            ]
+        )
+    else:
+        raise ValueError(f"Unsupported VAE type: {type}")
+
+    model.load_state_dict(pipe.vae.state_dict())
+    return model
