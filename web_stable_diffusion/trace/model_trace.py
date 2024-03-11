@@ -79,8 +79,9 @@ def vae_to_image(pipe) -> tvm.IRModule:
             self.vae = vae
 
         def forward(self, latents):
-            # Scale the latents so that it can be decoded by VAE.
-            latents = 1 / 0.13025 * latents
+            # Scale the latents so that it can be decoded by VAE. 
+            # and it's same for sd1.5 and sdxl
+            latents = 1 / 0.18215 * latents
             # VAE decode
             # z = self.vae.post_quant_conv(latents)
             image = self.vae.decode(latents, return_dict=False)[0]
@@ -88,7 +89,13 @@ def vae_to_image(pipe) -> tvm.IRModule:
             image = (image / 2 + 0.5).clamp(min=0, max=1)
             image = (image.permute(0, 2, 3, 1) * 255).round()
             return image
-
+    
+    ##########################################################
+    # Attention! sould modified base on the model:"1.5" or "XL"
+    # utils.get_vae(pipe, "1.5")
+    # or
+    # utils.get_vae(pipe, "XL")
+    ##########################################################
     vae = utils.get_vae(pipe, "1.5")
     vae_to_image = VAEModelWrapper(vae)
 
