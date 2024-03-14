@@ -8,15 +8,15 @@ You are also more than welcomed to checkout [Web LLM](https://github.com/mlc-ai/
 
 We have been seeing amazing progress through AI models recently. Thanks to the open-source effort, developers can now easily compose open-source models together to produce amazing tasks. Stable diffusion enables the automatic creation of photorealistic images as well as images in various styles based on text input. These models are usually big and compute-heavy, which means we have to pipe through all computation requests to (GPU) servers when developing web applications based on these models. Additionally, most of the workloads have to run on a specific type of GPUs where popular deep-learning frameworks are readily available.
 
-This project takes a step to change that status quo and bring more diversity to the ecosystem. There are a lot of reasons to get some (or all) of the computation to the client side. There are many possible benefits, such as cost reduction on the service provider side, as well as an enhancement for personalization and privacy protection. The development of personal computers (even mobile devices) is going in the direction that enables such possibilities. The client side is getting pretty powerful. 
+This project takes a step to change that status quo and bring more diversity to the ecosystem. There are a lot of reasons to get some (or all) of the computation to the client side. There are many possible benefits, such as cost reduction on the service provider side, as well as an enhancement for personalization and privacy protection. The development of personal computers (even mobile devices) is going in the direction that enables such possibilities. The client side is getting pretty powerful.
 
 Building special client apps for those applications is one option (which we also support), but won’t it be even more amazing if we can simply open a browser and directly bring AI natively to your browser tab? There is some level of readiness in the ecosystem. WebAssembly allows us to port more lower-level runtimes onto the web. To solve the compute problem, WebGPU is getting matured lately and enables native GPU executions on the browser.
 
 We are just seeing necessary elements coming together on the client side, both in terms of hardware and browser ecosystem. Still, there are big hurdles to cross, to name a few:
 
-* We need to bring the models somewhere without the relevant GPU-accelerated Python frameworks.
-* Most of the AI frameworks have a heavy reliance on optimized computed libraries that are maintained by hardware vendors. We need to start from zero. To get the maximum benefit, we might also need to produce variants per client environment.
-* Careful planning of memory usage so we can fit the models into memory.
+- We need to bring the models somewhere without the relevant GPU-accelerated Python frameworks.
+- Most of the AI frameworks have a heavy reliance on optimized computed libraries that are maintained by hardware vendors. We need to start from zero. To get the maximum benefit, we might also need to produce variants per client environment.
+- Careful planning of memory usage so we can fit the models into memory.
 
 We do not want to only do it for just one model. Instead, we would like to present a repeatable, hackable, composable workflow that enables anyone to easily develop and optimize these models in a **Python-first** environment and universally **deploy** them everywhere, including the web.
 
@@ -24,73 +24,80 @@ We do not want to only do it for just one model. Instead, we would like to prese
 
 We have a [Jupyter notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/walkthrough.ipynb) that walks you through all the stages, including
 
-* elaborate the key points of web ML model deployment and how we do to meet these points,
-* import the stable diffusion model,
-* optimize the model,
-* build the model,
-* deploy the model locally with native GPU runtime, and
-* deploy the model on web with WebGPU runtime.
+- elaborate the key points of web ML model deployment and how we do to meet these points,
+- import the stable diffusion model,
+- optimize the model,
+- build the model,
+- deploy the model locally with native GPU runtime, and
+- deploy the model on web with WebGPU runtime.
 
 If you want to go through these steps in command line, please follow the commands below:
 
 <details><summary>Commands</summary>
 
-* Install TVM Unity. You can either
-    * use `pip3 install mlc-ai-nightly -f https://mlc.ai/wheels` to install the TVM Unity wheel, or
-    * follow [TVM’s documentation](https://tvm.apache.org/docs/install/from_source.html) to build from source. **Please use `git checkout origin/unity` to checkout to TVM Unity after git clone.**
-* To import, optimize and build the stable diffusion model:
-    ```shell
-    python3 build.py
-    ```
-    By default `build.py` takes `apple/m2-gpu` as build target. You can also specify CUDA target via
-    ```shell
-    python3 build.py --target cuda
-    ```
-* To deploy the model locally with native GPU runtime:
-    ```shell
-    python3 deploy.py --prompt "A photo of an astronaut riding a horse on mars."
-    ```
-    You can substitute the prompt with your own one, and optionally use `--negative-prompt "Your negative prompt"` to specify a negative prompt.
-* To deploy the model on web with WebGPU runtime, the last section “Deploy on web” of the [walkthrough notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/walkthrough.ipynb) has listed the full instructions which you can refer to. We also provide the same list of plain instructions here:
-    <details><summary>Instructions</summary>
+- Install TVM Unity. You can either
+  - use `pip3 install mlc-ai-nightly -f https://mlc.ai/wheels` to install the TVM Unity wheel, or
+  - follow [TVM’s documentation](https://tvm.apache.org/docs/install/from_source.html) to build from source. **Please use `git checkout origin/unity` to checkout to TVM Unity after git clone.**
+- To import, optimize and build the stable diffusion model:
+  ```shell
+  python3 build.py
+  ```
+  By default `build.py` takes `apple/m2-gpu` as build target. You can also specify CUDA target via
+  ```shell
+  python3 build.py --target cuda
+  ```
+- To deploy the model locally with native GPU runtime:
+  ```shell
+  python3 deploy.py --prompt "A photo of an astronaut riding a horse on mars."
+  ```
+  You can substitute the prompt with your own one, and optionally use `--negative-prompt "Your negative prompt"` to specify a negative prompt.
+- To deploy the model on web with WebGPU runtime, the last section “Deploy on web” of the [walkthrough notebook](https://github.com/mlc-ai/web-stable-diffusion/blob/main/walkthrough.ipynb) has listed the full instructions which you can refer to. We also provide the same list of plain instructions here:
+  <details><summary>Instructions</summary>
 
-    First, let’s install all the prerequisite:
-    1. [emscripten](https://emscripten.org). It is an LLVM-based compiler which compiles C/C++ source code to WebAssembly.
-        - Follow the [installation instruction](https://emscripten.org/docs/getting_started/downloads.html#installation-instructions-using-the-emsdk-recommended) to install the latest emsdk.
-        - Source `emsdk_env.sh` by `source path/to/emsdk_env.sh`, so that `emcc` is reachable from PATH and the command `emcc` works.
-    2. [Rust](https://www.rust-lang.org/tools/install).
-    3. [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/). It helps build Rust-generated WebAssembly, which used for tokenizer in our case here.
-    4. Install jekyll by following the [official guides](https://jekyllrb.com/docs/installation/). It is the package we use for website.
-    5. Install jekyll-remote-theme by command
-        ```shell
-        gem install jekyll-remote-theme
-        ```
-    6. Install [Chrome Canary](https://www.google.com/chrome/canary/). It is a developer version of Chrome that enables the use of WebGPU.
+      First, let’s install all the prerequisite:
+      1. [emscripten](https://emscripten.org). It is an LLVM-based compiler which compiles C/C++ source code to WebAssembly.
+          - Follow the [installation instruction](https://emscripten.org/docs/getting_started/downloads.html#installation-instructions-using-the-emsdk-recommended) to install the latest emsdk.
+          - Source `emsdk_env.sh` by `source path/to/emsdk_env.sh`, so that `emcc` is reachable from PATH and the command `emcc` works.
+      2. [Rust](https://www.rust-lang.org/tools/install).
+      3. [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/). It helps build Rust-generated WebAssembly, which used for tokenizer in our case here.
+      4. Install jekyll by following the [official guides](https://jekyllrb.com/docs/installation/). It is the package we use for website.
+      5. Install jekyll-remote-theme by command
+          ```shell
+          gem install jekyll-remote-theme
+          ```
+      6. Install [Chrome Canary](https://www.google.com/chrome/canary/). It is a developer version of Chrome that enables the use of WebGPU.
 
-    We can verify the success installation by trying out `emcc`, `jekyll` and `wasm-pack` in terminal respectively.
+      We can verify the success installation by trying out `emcc`, `jekyll` and `wasm-pack` in terminal respectively.
 
-    Then, prepare all the necessary dependencies for web build:
-    ```shell
-    ./scripts/prep_deps.sh
-    ```
+      Then, prepare all the necessary dependencies for web build:
+      ```shell
+      ./scripts/prep_deps.sh
+      ```
 
-    We can now build the model to WebGPU backend and export the executable to disk in the WebAssembly file format, by running
-    ```shell
-    python3 build.py --target webgpu
-    ```
+      We can now build the model to WebGPU backend and export the executable to disk in the WebAssembly file format, by running
+      ```shell
+      python3 build.py --target webgpu
+      ```
 
-    The last thing to do is setting up the site with
-    ```shell
-    ./scripts/local_deploy_site.sh
-    ```
+      The last thing to do is setting up the site with
+      ```shell
+      ./scripts/local_deploy_site.sh
+      ```
 
-    With the site set up, you can go to `localhost:8888/` in Chrome Canary to try out the demo on your local machine. Don’t forget to use
-    ```shell
-    /Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary --enable-dawn-features=disable_robustness
-    ```
-    to launch Chrome Canary to turn off the robustness check from Chrome.
-    </details>
-</details>
+      With the site set up, you can go to `localhost:8888/` in Chrome Canary to try out the demo on your local machine. Don’t forget to use
+      ```shell
+
+      /Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary --enable-dawn-features=disable_robustness
+      ```
+       ```shell
+
+
+      \AppData\Local\Google\Chrome SxS\Application\chrome.exe --enable-dawn-features=disable_robustness
+      ```
+      to launch Chrome Canary to turn off the robustness check from Chrome.
+      </details>
+
+  </details>
 
 ## How?
 
@@ -117,9 +124,23 @@ Besides the WebGPU runtime, we also provide options for native deployment with l
 WebGPU works by translating WGSL (WebGPU Shading Language) shaders to native shaders. So, in theory, we can reach zero gaps between the WebGPU runtime and the native environment. If we directly use Chrome to check the current demo on Apple silicon, however, we can find a performance degradation (about 3x). This is because Chrome’s WebGPU implementation inserts bound clips for all array index access, such that `a[i]` becomes `a[min(i, a.size)]`. Ideally, downstream shader compilers should be able to optimize the bound clipping out, but here unfortunately, it is not the case. This gap can be fixed once WebGPU implementation becomes more mature, checks the index access range, and drops such clipping.
 
 You can get around this by using a special flag to launch Chrome (thanks to Dawn developers for providing the pointers), by exiting Chrome completely, then in the command line, type
+
 ```shell
 /path/to/chrome-canary --enable-dawn-features=disable_robustness
 ```
+
+Windows
+
+```shell
+\AppData\Local\Google\Chrome SxS\Application\chrome.exe" --enable-dawn-features=disable_robustness
+```
+
+Mac
+
+```shell
+/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary --enable-dawn-features=disable_robustness
+```
+
 Then you will find that the execution speed is as fast as the native GPU environment. We anticipate this problem will get resolved as WebGPU matures.
 
 We are just seeing the dawn of what we believe to be an eruption. WebGPU is still evolving (though it is getting close to shipping this year), and only available through Chrome Canary, and can be unstable. It also still comes with limitations, such as only support for FP32 (FP16 shader extension is on the spec but not yet implemented). The stable diffusion here would require a GPU with a decent amount of RAM (8GB). We have only tested our solution through Apple silicons so far. There are also opportunities to support advanced optimizations such as [FlashAttention](https://arxiv.org/abs/2205.14135) and quantization to further improve the performance of the system.
